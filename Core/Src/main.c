@@ -137,10 +137,10 @@ int main(void)
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4); // i am not sure if i need to start this PWM
 
-  //HAL_I2S_Transmit_DMA(&hi2s2, Vblack, VID_HSIZE);
+  HAL_I2S_Transmit_DMA(&hi2s2, Vblack, VID_HSIZE);
   //HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)Vblack, XFERS_PERLINE);
 
-  printf("Hello from STM32 over USB UART!\r\n");
+  //printf("Hello from STM32 over USB UART!\r\n");
 
 
 
@@ -308,11 +308,11 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   // chat told me to add - this is external then the ioc aoutumatics
+  sClockSourceConfig.ClockSource    = TIM_CLOCKSOURCE_ETRMODE1;  // CHANGE it from INTERNAL to ETRMODE1
+  sClockSourceConfig.ClockPolarity  = TIM_CLOCKPOLARITY_NONINVERTED;
+  sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
+  sClockSourceConfig.ClockFilter    = 0;
 
-    sClockSourceConfig.ClockSource    = TIM_CLOCKSOURCE_ETRMODE1;  // CHANGE it from INTERNAL to ETRMODE1
-    sClockSourceConfig.ClockPolarity  = TIM_CLOCKPOLARITY_NONINVERTED;
-    sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
-    sClockSourceConfig.ClockFilter    = 0;
 
   if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
   {
