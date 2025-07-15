@@ -139,11 +139,24 @@ int main(void)
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4); // i am not sure if i need to start this PWM
 
 
-  HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, VID_HSIZE);
-  //HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)Vblack, XFERS_PERLINE);
-
-  //printf("Hello from STM32 over USB UART!\r\n");
-
+  HAL_I2S_Transmit_DMA(&hi2s2, Vblack, VID_HSIZE);
+  // In MX_GPIO_Init():
+//  __HAL_RCC_GPIOC_CLK_ENABLE();
+//  GPIO_InitTypeDef GPIO_InitStruct = {0};
+//  GPIO_InitStruct.Pin   = GPIO_PIN_5;            // PA5 = LD2
+//  GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;    // push-pull output
+//  GPIO_InitStruct.Pull  = GPIO_NOPULL;
+//  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+//  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+//
+//
+//
+//  // pa3 on EVERY SECOND LOOP for 5 seconds
+//
+//  for (int i = 0; i < 10; i++) {
+//		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_5);
+//		HAL_Delay(500);
+//	}
 
 
 
@@ -310,7 +323,7 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   // chat told me to add - this is external then the ioc aoutumatics
-  sClockSourceConfig.ClockSource    = TIM_CLOCKSOURCE_INTERNAL;  // CHANGE it from INTERNAL to ETRMODE1
+  sClockSourceConfig.ClockSource    = TIM_CLOCKSOURCE_ETRMODE1;  // CHANGE it from INTERNAL to ETRMODE1
   sClockSourceConfig.ClockPolarity  = TIM_CLOCKPOLARITY_NONINVERTED;
   sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
   sClockSourceConfig.ClockFilter    = 0;
