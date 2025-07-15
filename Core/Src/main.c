@@ -74,7 +74,7 @@ static void MX_TIM3_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void DelayMs(uint32_t nTime)
+void DelayMs(uint32_t nTime) // delay function
 {
   TimingDelay = nTime;
   while((TimingDelay != 0));
@@ -137,9 +137,11 @@ int main(void)
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4); // i am not sure if i need to start this PWM
 
-  HAL_I2S_Transmit_DMA(&hi2s2, Vblack, VID_HSIZE);
- // HAL_I2S_Transmit_DMA(&hi2s2, Vblack, XFERS_PERLINE+HPORCH);
+  //HAL_I2S_Transmit_DMA(&hi2s2, Vblack, VID_HSIZE);
+  //HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)Vblack, XFERS_PERLINE);
+
   printf("Hello from STM32 over USB UART!\r\n");
+
 
 
 
@@ -247,6 +249,7 @@ static void MX_I2S2_Init(void)
   /* USER CODE END I2S2_Init 0 */
 
   /* USER CODE BEGIN I2S2_Init 1 */
+	//hi2s2.Init.CPOL = I2S_CPOL_HIGH;
 
   /* USER CODE END I2S2_Init 1 */
   hi2s2.Instance = SPI2;
@@ -255,7 +258,7 @@ static void MX_I2S2_Init(void)
   hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
   hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_8K;
-  hi2s2.Init.CPOL = I2S_CPOL_LOW;
+  hi2s2.Init.CPOL = I2S_CPOL_HIGH;
   if (HAL_I2S_Init(&hi2s2) != HAL_OK)
   {
     Error_Handler();
@@ -286,16 +289,8 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE BEGIN TIM2_Init 1 */
 
-  // chat told me to add - this is external then the ioc aoutumatics
 
-  sClockSourceConfig.ClockSource    = TIM_CLOCKSOURCE_ETRMODE1;
-  sClockSourceConfig.ClockPolarity  = TIM_CLOCKPOLARITY_NONINVERTED;
-  sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
-  sClockSourceConfig.ClockFilter    = 0;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
+
   //i should change :
   //htim2.Init.Prescaler         = VID_HSIZE/4 - 1;
   //htim2.Init.Period            = 2*VID_VSIZE - 1;
@@ -312,7 +307,13 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  // chat told me to add - this is external then the ioc aoutumatics
+
+    sClockSourceConfig.ClockSource    = TIM_CLOCKSOURCE_ETRMODE1;  // CHANGE it from INTERNAL to ETRMODE1
+    sClockSourceConfig.ClockPolarity  = TIM_CLOCKPOLARITY_NONINVERTED;
+    sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
+    sClockSourceConfig.ClockFilter    = 0;
+
   if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
   {
     Error_Handler();
