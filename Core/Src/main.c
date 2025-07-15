@@ -135,7 +135,9 @@ int main(void)
 
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
+  HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4); // i am not sure if i need to start this PWM
+
 
   HAL_I2S_Transmit_DMA(&hi2s2, Vblack, VID_HSIZE);
   //HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)Vblack, XFERS_PERLINE);
@@ -322,15 +324,15 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;
-  sSlaveConfig.InputTrigger = TIM_TS_ETRF;
-  sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
-  sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
-  sSlaveConfig.TriggerFilter = 0;
-  if (HAL_TIM_SlaveConfigSynchro(&htim2, &sSlaveConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
+//  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;
+//  sSlaveConfig.InputTrigger = TIM_TS_ETRF;
+//  sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
+//  sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
+//  sSlaveConfig.TriggerFilter = 0;
+//  if (HAL_TIM_SlaveConfigSynchro(&htim2, &sSlaveConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC4REF;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
