@@ -1,0 +1,6 @@
+../Core/Src/gdi.c:78:6:gdiBitBlt	32	static
+../Core/Src/gdi.c:158:6:gdiPoint	24	static
+../Core/Src/gdi.c:196:6:gdiLine	48	static
+../Core/Src/gdi.c:261:6:gdiRectangle	32	static
+../Core/Src/gdi.c:280:6:gdiRectangleEx	24	static
+../Core/Src/gdi.c:367:6:gdiDrawTextEx	32	static
