@@ -123,38 +123,31 @@ int main(void)
   /* USER CODE BEGIN 2 */
   //do know if it is necessary
 
+
+  HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
-
-  // --------------------------------------------------------------
-  // may be to start line that ?
-  //HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_2); // this the same as
-  // or
-  // maybe to start like that :
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // this the same
-  // --------------------------------------------------------------
-
+  HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_2); // this the same
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
-  HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
+
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4); // i am not sure if i need to start this PWM
 
-  // Now hook TIM3 → DMA on CH1 and CH3:
-  HAL_TIM_OC_Start_DMA(&htim3,
-                       TIM_CHANNEL_1,
-                       (uint32_t*)lineptrs,       // buffer of pointers per line
-                       VID_VSIZE);                // total number of lines per field
-
-  HAL_TIM_OC_Start_DMA(&htim3,
-                       TIM_CHANNEL_3,
-                       (uint32_t*)SyncTable,       // sync-pulse timing table
-                       VID_VSIZE);
+//  // Now hook TIM3 → DMA on CH1 and CH3:
+//  HAL_TIM_OC_Start_DMA(&htim3,
+//                       TIM_CHANNEL_1,
+//                       (uint32_t*)lineptrs,       // buffer of pointers per line
+//                       VID_VSIZE);                // total number of lines per field
+//
+//  HAL_TIM_OC_Start_DMA(&htim3,
+//                       TIM_CHANNEL_3,
+//                       (uint32_t*)SyncTable,       // sync-pulse timing table
+//                       VID_VSIZE);
 
 
   HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, VID_HSIZE);
 
 
-
-#define PATTERN_LEN 64
+//#define PATTERN_LEN 64
 //uint16_t testBuffer[PATTERN_LEN];
 //
 //void preparePattern(void) {
@@ -183,6 +176,8 @@ int main(void)
 //
 //    // Now the buffer will be replayed over and over at the I2S bitrate.
 //}
+  vidClearScreen();
+  gdiDrawTextEx(40, 40, "HELLO VIDEO");
 
   // also i added a function for handleing
   srand(SysTick->VAL);
@@ -194,7 +189,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  show();
+	  //show();
+	  //DelayMs(20);
 	  //HAL_I2S_Transmit_DMA(&hi2s2, testBuffer, PATTERN_LEN);
 	 //HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, XFERS_PERLINE+HPORCH);
 	  //show();
@@ -211,39 +207,48 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_OscInitTypeDef       RCC_OscInitStruct = {0};
+    RCC_ClkInitTypeDef       RCC_ClkInitStruct = {0};
+    RCC_PeriphCLKInitTypeDef PeriphClkInit    = {0};
 
-  /** Configure the main internal regulator output voltage
-  */
-  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
+    /* Voltage scaling for max performance */
+    HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    /* 1) Enable HSE and configure PLL (HSE=8 MHz → SYSCLK=16 MHz) */
+    RCC_OscInitStruct.OscillatorType      = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState            = RCC_HSE_ON;
+    RCC_OscInitStruct.PLL.PLLState        = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource       = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLM            = 1;                // /1
+    RCC_OscInitStruct.PLL.PLLN            = 2;                // ×2 → 16 MHz
+    RCC_OscInitStruct.PLL.PLLP            = RCC_PLLP_DIV7;    // unused
+    RCC_OscInitStruct.PLL.PLLQ            = RCC_PLLQ_DIV2;    // USB if needed
+    RCC_OscInitStruct.PLL.PLLR            = RCC_PLLR_DIV2;    // SYSCLK = VCO/2 = 16 MHz
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+        Error_Handler();
+    }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    /* 2) Select PLL as SYSCLK source, AHB/APB @ no prescale */
+    RCC_ClkInitStruct.ClockType      = RCC_CLOCKTYPE_SYSCLK
+                                     | RCC_CLOCKTYPE_HCLK
+                                     | RCC_CLOCKTYPE_PCLK1
+                                     | RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource   = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider  = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK) {
+        Error_Handler();
+    }
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    /* 3) Tell the I2S peripheral to take its clock from SYSCLK */
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_I2S;
+    PeriphClkInit.I2sClockSelection    = RCC_I2SCLKSOURCE_SYSCLK;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
+        Error_Handler();
+    }
 }
+
 
 /**
   * @brief I2S2 Initialization Function
@@ -252,31 +257,24 @@ void SystemClock_Config(void)
   */
 static void MX_I2S2_Init(void)
 {
-
-  /* USER CODE BEGIN I2S2_Init 0 */
-
-  /* USER CODE END I2S2_Init 0 */
-
-  /* USER CODE BEGIN I2S2_Init 1 */
-	//hi2s2.Init.CPOL = I2S_CPOL_HIGH;
-
-  /* USER CODE END I2S2_Init 1 */
-  hi2s2.Instance = SPI2;
-  hi2s2.Init.Mode = I2S_MODE_MASTER_TX;
-  hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
-  hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
-  hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
-  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_8K;
-  hi2s2.Init.CPOL = I2S_CPOL_HIGH;
+  /* … HAL setup as before … */
+  hi2s2.Instance          = SPI2;
+  hi2s2.Init.Mode         = I2S_MODE_MASTER_TX;
+  hi2s2.Init.Standard     = I2S_STANDARD_PHILIPS;
+  hi2s2.Init.DataFormat   = I2S_DATAFORMAT_16B;
+  hi2s2.Init.MCLKOutput   = I2S_MCLKOUTPUT_DISABLE;
+  hi2s2.Init.AudioFreq    = I2S_AUDIOFREQ_8K;     // dummy, we’ll override directly
+  hi2s2.Init.CPOL         = I2S_CPOL_HIGH;
   if (HAL_I2S_Init(&hi2s2) != HAL_OK)
-  {
     Error_Handler();
-  }
-  /* USER CODE BEGIN I2S2_Init 2 */
 
-  /* USER CODE END I2S2_Init 2 */
-
+  /* —————————————— OVERRIDE PRESCALER —————————————— */
+  __HAL_I2S_DISABLE(&hi2s2);
+  // On STM32G4, writing 1 to I2SPR gives I2SDIV=1, ODD=0, MCKOE=0
+  SPI2->I2SPR = 1;
+  __HAL_I2S_ENABLE(&hi2s2);
 }
+
 
 /**
   * @brief TIM2 Initialization Function
@@ -307,11 +305,11 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = VID_HSIZE/4 - 1;
+  htim2.Init.Prescaler = VID_HSIZE/4 - 1; // equal to
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 2*VID_VSIZE - 1;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim2.Init.Period = 2*VID_VSIZE - 1; // 2*
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE; // was DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
@@ -436,6 +434,7 @@ static void MX_TIM3_Init(void)
   // HSYNC on CH2:
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = HSYNCCOUNTS;
+  //sConfigOC.OC2Preaload = TIM_AUTORELOAD_PRELOAD_ENABLE; // was ENABLE
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
@@ -454,7 +453,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM3_Init 2 */
-  TIM_DMACmd(TIM3, TIM_DMA_CC1|TIM_DMA_CC3, ENABLE);
+  //TIM_DMACmd(TIM3, TIM_DMA_CC1|TIM_DMA_CC3, ENABLE);
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
 
