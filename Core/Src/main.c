@@ -74,7 +74,7 @@ static void MX_TIM3_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void DelayMs(uint32_t nTime)
+void DelayMs(uint32_t nTime) // delay function
 {
   TimingDelay = nTime;
   while((TimingDelay != 0));
@@ -135,11 +135,22 @@ int main(void)
 
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
+  HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4); // i am not sure if i need to start this PWM
 
-  HAL_I2S_Transmit_DMA(&hi2s2, Vblack, VID_HSIZE);
- // HAL_I2S_Transmit_DMA(&hi2s2, Vblack, XFERS_PERLINE+HPORCH);
-  printf("Hello from STM32 over USB UART!\r\n");
+  // Now hook TIM3 → DMA on CH1 and CH3:
+  HAL_TIM_OC_Start_DMA(&htim3,
+                       TIM_CHANNEL_1,
+                       (uint32_t*)lineptrs,       // buffer of pointers per line
+                       VID_VSIZE);                // total number of lines per field
+
+  HAL_TIM_OC_Start_DMA(&htim3,
+                       TIM_CHANNEL_3,
+                       (uint32_t*)SyncTable,       // sync-pulse timing table
+                       VID_VSIZE);
+
+
+  HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, VID_HSIZE);
 
 
 
@@ -247,6 +258,7 @@ static void MX_I2S2_Init(void)
   /* USER CODE END I2S2_Init 0 */
 
   /* USER CODE BEGIN I2S2_Init 1 */
+	//hi2s2.Init.CPOL = I2S_CPOL_HIGH;
 
   /* USER CODE END I2S2_Init 1 */
   hi2s2.Instance = SPI2;
@@ -255,7 +267,7 @@ static void MX_I2S2_Init(void)
   hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
   hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_8K;
-  hi2s2.Init.CPOL = I2S_CPOL_LOW;
+  hi2s2.Init.CPOL = I2S_CPOL_HIGH;
   if (HAL_I2S_Init(&hi2s2) != HAL_OK)
   {
     Error_Handler();
@@ -280,22 +292,14 @@ static void MX_TIM2_Init(void)
   /* USER CODE END TIM2_Init 0 */
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-  TIM_SlaveConfigTypeDef sSlaveConfig = {0};
+  //TIM_SlaveConfigTypeDef sSlaveConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM2_Init 1 */
 
-  // chat told me to add - this is external then the ioc aoutumatics
 
-  sClockSourceConfig.ClockSource    = TIM_CLOCKSOURCE_ETRMODE1;
-  sClockSourceConfig.ClockPolarity  = TIM_CLOCKPOLARITY_NONINVERTED;
-  sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
-  sClockSourceConfig.ClockFilter    = 0;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
+
   //i should change :
   //htim2.Init.Prescaler         = VID_HSIZE/4 - 1;
   //htim2.Init.Period            = 2*VID_VSIZE - 1;
@@ -306,13 +310,19 @@ static void MX_TIM2_Init(void)
   htim2.Init.Prescaler = VID_HSIZE/4 - 1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 2*VID_VSIZE - 1;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
   }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  // chat told me to add - this is external then the ioc aoutumatics
+  sClockSourceConfig.ClockSource    = TIM_CLOCKSOURCE_ETRMODE1;  // CHANGE it from INTERNAL to ETRMODE1
+  sClockSourceConfig.ClockPolarity  = TIM_CLOCKPOLARITY_NONINVERTED;
+  sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
+  sClockSourceConfig.ClockFilter    = 0;
+
+
   if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
   {
     Error_Handler();
@@ -321,15 +331,15 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;
-  sSlaveConfig.InputTrigger = TIM_TS_ETRF;
-  sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
-  sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
-  sSlaveConfig.TriggerFilter = 0;
-  if (HAL_TIM_SlaveConfigSynchro(&htim2, &sSlaveConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
+//  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;
+//  sSlaveConfig.InputTrigger = TIM_TS_ETRF;
+//  sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
+//  sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
+//  sSlaveConfig.TriggerFilter = 0;
+//  if (HAL_TIM_SlaveConfigSynchro(&htim2, &sSlaveConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC4REF;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
@@ -423,27 +433,31 @@ static void MX_TIM3_Init(void)
   {
     Error_Handler();
   }
+  // HSYNC on CH2:
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = HSYNCCOUNTS;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
+  // Back-porch start on CH3:
   sConfigOC.OCMode = TIM_OCMODE_TIMING;
   sConfigOC.Pulse = 208;
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
   }
+  // Active-video off on CH4:
   sConfigOC.Pulse = 880;
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM3_Init 2 */
-
+  TIM_DMACmd(TIM3, TIM_DMA_CC1|TIM_DMA_CC3, ENABLE);
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+
 
 }
 
