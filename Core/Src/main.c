@@ -123,21 +123,14 @@ int main(void)
   /* USER CODE BEGIN 2 */
   //do know if it is necessary
 
+
+  HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
-
-  // --------------------------------------------------------------
-  // may be to start line that ?
   //HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_2); // this the same as
-  // or
-  // maybe to start like that :
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // this the same
-  // --------------------------------------------------------------
-
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
-  HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4); // i am not sure if i need to start this PWM
-
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // this the same
   // Now hook TIM3 → DMA on CH1 and CH3:
   HAL_TIM_OC_Start_DMA(&htim3,
                        TIM_CHANNEL_1,
@@ -195,6 +188,7 @@ int main(void)
   while (1)
   {
 	  show();
+	  //DelayMs(20);
 	  //HAL_I2S_Transmit_DMA(&hi2s2, testBuffer, PATTERN_LEN);
 	 //HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, XFERS_PERLINE+HPORCH);
 	  //show();
@@ -273,7 +267,9 @@ static void MX_I2S2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN I2S2_Init 2 */
-
+  __HAL_I2S_DISABLE(&hi2s2);
+  SPI2->I2SPR = 1;
+  __HAL_I2S_ENABLE(&hi2s2);
   /* USER CODE END I2S2_Init 2 */
 
 }
