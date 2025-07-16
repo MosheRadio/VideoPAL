@@ -18,18 +18,18 @@
 
 #define PAL_Hsyncinterval			64			// microseconds per line
 #define PAL_HsyncPulsewidth			4.7			// microseconds per pulse
-#define PAL_Horizontalfrequency		(1000000 / PAL_Hsyncinterval)
-#define TIMERCOUNTS					(HSI_VALUE / PAL_Horizontalfrequency)
-#define HSYNCCOUNTS					(TIMERCOUNTS * PAL_HsyncPulsewidth / PAL_Hsyncinterval)
+#define PAL_Horizontalfrequency		(1000000 / PAL_Hsyncinterval) // this 100000 / 64 = 15625 Hz
+#define TIMERCOUNTS					(HSI_VALUE / PAL_Horizontalfrequency) // this is 512 counts per line
+#define HSYNCCOUNTS					(TIMERCOUNTS * PAL_HsyncPulsewidth / PAL_Hsyncinterval)// this is exactly
 
 #define HDELAY			6		// HalfWords DMA length sync offset (I2S)
 #define HPORCH			11		// 176 dots	DMA length (in HalfWords)
 #define	XFERS_PERLINE	21		// 336 dots	DMA length (in HalfWords)
 
-#define	VID_HSIZE		(HPORCH+XFERS_PERLINE)	// Horizontal line duration
+#define	VID_HSIZE		(HPORCH+XFERS_PERLINE)	// Horizontal line duration this is 11+21 = 32 HalfWords
 #define	VLINES			240		// Vertical resolution (number of visible lines)
 #define BLINES			73		// invisible lines (including VSYNC)
-#define	VID_VSIZE		(2 * (VLINES+BLINES) -1)	// number of lines per field
+#define	VID_VSIZE		(2 * (VLINES+BLINES) -1)	// number of lines per field , this is 240+73-1 = 312
 
 #define	VID_PIXELS_X	(XFERS_PERLINE * sizeof(uint16_t) * 8)
 #define	VID_PIXELS_Y	VLINES

@@ -122,29 +122,32 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   //do know if it is necessary
-
+  __HAL_DMA_DISABLE(&hdma_spi2_tx);
+  hdma_spi2_tx.Instance->CCR |= DMA_CCR_CIRC;
+  __HAL_DMA_ENABLE(&hdma_spi2_tx);
 
   HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
-  //HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_2); // this the same as
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // this the same
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4); // i am not sure if i need to start this PWM
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // this the same
-  // Now hook TIM3 → DMA on CH1 and CH3:
-  HAL_TIM_OC_Start_DMA(&htim3,
-                       TIM_CHANNEL_1,
-                       (uint32_t*)lineptrs,       // buffer of pointers per line
-                       VID_VSIZE);                // total number of lines per field
+  //HAL_TIM_OC_Start_DMA(&htim3, TIM_CHANNEL_1, (uint32_t*)lineptrs, VID_VSIZE);
 
-  HAL_TIM_OC_Start_DMA(&htim3,
-                       TIM_CHANNEL_3,
-                       (uint32_t*)SyncTable,       // sync-pulse timing table
-                       VID_VSIZE);
+  //HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4); // i am not sure if i need to start this PWM
+
+//  // Now hook TIM3 → DMA on CH1 and CH3:
+//  HAL_TIM_OC_Start_DMA(&htim3,
+//                       TIM_CHANNEL_1,
+//                       (uint32_t*)lineptrs,       // buffer of pointers per line
+//                       VID_VSIZE);                // total number of lines per field
+//
+//  HAL_TIM_OC_Start_DMA(&htim3,
+//                       TIM_CHANNEL_3,
+//                       (uint32_t*)SyncTable,       // sync-pulse timing table
+//                       VID_VSIZE);
 
 
-  HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, VID_HSIZE);
-
+  HAL_I2S_Transmit_DMA(&hi2s2, Vblack, VID_HSIZE);
 
 
 #define PATTERN_LEN 64
@@ -303,10 +306,10 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = VID_HSIZE/4 - 1;
+  htim2.Init.Prescaler = VID_HSIZE/4 - 1; // // 32/4 - 1 = 7
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 2*VID_VSIZE - 1;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.Period = 2*VID_VSIZE - 1; // 2*312 - 1 = 623
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE; // was DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
