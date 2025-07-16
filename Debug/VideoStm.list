@@ -31,25 +31,25 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, DATA
  13 .ARM.attributes 00000030  00000000  00000000  0005cc00  2**0
                   CONTENTS, READONLY
- 14 .debug_info   0000eff6  00000000  00000000  0005cc30  2**0
+ 14 .debug_info   0000f000  00000000  00000000  0005cc30  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_abbrev 00002884  00000000  00000000  0006bc26  2**0
+ 15 .debug_abbrev 00002884  00000000  00000000  0006bc30  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_aranges 00000ff8  00000000  00000000  0006e4b0  2**3
+ 16 .debug_aranges 00000ff8  00000000  00000000  0006e4b8  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_macro  00027ac3  00000000  00000000  0006f4a8  2**0
+ 17 .debug_macro  00027ac3  00000000  00000000  0006f4b0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_line   000116ff  00000000  00000000  00096f6b  2**0
+ 18 .debug_line   000116ff  00000000  00000000  00096f73  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_str    000f9d61  00000000  00000000  000a866a  2**0
+ 19 .debug_str    000f9d61  00000000  00000000  000a8672  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 20 .comment      00000043  00000000  00000000  001a23cb  2**0
+ 20 .comment      00000043  00000000  00000000  001a23d3  2**0
                   CONTENTS, READONLY
- 21 .debug_rnglists 00000c24  00000000  00000000  001a240e  2**0
+ 21 .debug_rnglists 00000c24  00000000  00000000  001a2416  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 22 .debug_frame  00004a9c  00000000  00000000  001a3034  2**2
+ 22 .debug_frame  00004a9c  00000000  00000000  001a303c  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 23 .debug_line_str 00000061  00000000  00000000  001a7ad0  2**0
+ 23 .debug_line_str 00000061  00000000  00000000  001a7ad8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -2027,6 +2027,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
  8000ff4:	f000 f89e 	bl	8001134 <Error_Handler>
   }
+  // HSYNC on CH2:
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
  8000ff8:	2360      	movs	r3, #96	@ 0x60
  8000ffa:	607b      	str	r3, [r7, #4]
@@ -2046,6 +2047,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
  8001012:	f000 f88f 	bl	8001134 <Error_Handler>
   }
+  // Back-porch start on CH3:
   sConfigOC.OCMode = TIM_OCMODE_TIMING;
  8001016:	2300      	movs	r3, #0
  8001018:	607b      	str	r3, [r7, #4]
@@ -2065,6 +2067,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
  8001030:	f000 f880 	bl	8001134 <Error_Handler>
   }
+  // Active-video off on CH4:
   sConfigOC.Pulse = 880;
  8001034:	f44f 735c 	mov.w	r3, #880	@ 0x370
  8001038:	60bb      	str	r3, [r7, #8]
@@ -2082,11 +2085,12 @@ static void MX_TIM3_Init(void)
  800104c:	f000 f872 	bl	8001134 <Error_Handler>
   }
   /* USER CODE BEGIN TIM3_Init 2 */
-
+  //TIM_DMACmd(TIM3, TIM_DMA_CC1|TIM_DMA_CC3, ENABLE);
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
  8001050:	4803      	ldr	r0, [pc, #12]	@ (8001060 <MX_TIM3_Init+0x180>)
  8001052:	f000 fb9d 	bl	8001790 <HAL_TIM_MspPostInit>
+
 
 }
  8001056:	bf00      	nop

@@ -454,7 +454,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM3_Init 2 */
-  TIM_DMACmd(TIM3, TIM_DMA_CC1|TIM_DMA_CC3, ENABLE);
+  //TIM_DMACmd(TIM3, TIM_DMA_CC1|TIM_DMA_CC3, ENABLE);
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
 
