@@ -150,7 +150,7 @@ int main(void)
                        VID_VSIZE);
 
 
-  //HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, VID_HSIZE);
+  HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, VID_HSIZE);
 
 
 
@@ -433,27 +433,31 @@ static void MX_TIM3_Init(void)
   {
     Error_Handler();
   }
+  // HSYNC on CH2:
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = HSYNCCOUNTS;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
+  // Back-porch start on CH3:
   sConfigOC.OCMode = TIM_OCMODE_TIMING;
   sConfigOC.Pulse = 208;
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
   }
+  // Active-video off on CH4:
   sConfigOC.Pulse = 880;
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM3_Init 2 */
-
+  TIM_DMACmd(TIM3, TIM_DMA_CC1|TIM_DMA_CC3, ENABLE);
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+
 
 }
 

@@ -39,7 +39,7 @@ extern "C" {
 extern __IO uint32_t Paused;
 extern __IO uint32_t TimingDelay;
 void DelayMs(uint32_t nTime);
-extern SyncTable[];
+extern const uint16_t SyncTable[];
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
