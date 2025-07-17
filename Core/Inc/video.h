@@ -45,6 +45,7 @@ hese values match PAL video timing specifications:
 
 extern uint16_t Vblack[XFERS_PERLINE + HPORCH]; // 21 + 11 = 32 halfwords per line
 extern uint16_t Vwhite[XFERS_PERLINE+HPORCH]; // 21 + 11 = 32 halfwords per line
+extern uint16_t *borders[VID_VSIZE];
 /*
  * The CMAR addresses have an offset to the actual framebuffer address because
  * the DMA adds a variable offset and counts from HDELAY ... (HDELAY+19).

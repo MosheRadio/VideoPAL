@@ -125,6 +125,7 @@ int main(void)
   HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
   HAL_TIM_Base_Start(&htim3); // start the timer for the video sync
 
+
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // this the same
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
@@ -132,55 +133,32 @@ int main(void)
 
 
   // Now hook TIM3 → DMA on CH1 and CH3:
-  HAL_TIM_OC_Start_DMA(&htim3,
-                       TIM_CHANNEL_1,
-                       (uint32_t*)lineptrs,       // buffer of pointers per line
-                       VID_VSIZE);                // total number of lines per field
-
-  HAL_TIM_OC_Start_DMA(&htim3,
-                       TIM_CHANNEL_3,
-                       (uint32_t*)SyncTable,       // sync-pulse timing table
-                       VID_VSIZE);
-
-
-  HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, VID_HSIZE);
-
+  /* for I2S: */
+//  HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_3, (uint32_t*)lineptrs, VID_HSIZE);
+//  HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_4, (uint32_t*)borders,   VID_VSIZE);
+//  HAL_TIM_OC_Start_DMA  (&htim3, TIM_CHANNEL_1, (uint32_t*)SyncTable,  VID_HSIZE);
+  HAL_DMA_Start(
+    &hdma_tim3_ch1,
+    (uint32_t)SyncTable,             // memory source
+    (uint32_t)&TIM3->CCR1,           // peripheral dest
+    652
+  );
+  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);
 
 
-#define PATTERN_LEN 64
-//uint16_t testBuffer[PATTERN_LEN];
-//
-//void preparePattern(void) {
-//    // Fill a sawtooth or other visible pattern
-//    for (int i = 0; i < PATTERN_LEN; i++) {
-//        testBuffer[i] = (uint16_t)(i * 0x1000) | (i & 0x0FFF);
-//    }
-//}
 
-//void startDmaLoop(void) {
-//    // 1) First fill the buffer
-//    preparePattern();
-//
-//    // 2) Start the I2S‐DMA in circular mode so it never stops:
-//    //    – hi2s2 was set up in MX_I2S2_Init()
-//    //    – hdma_spi2_tx was configured in MX_DMA_Init()
-//    //
-//    if (HAL_I2S_Transmit_DMA(&hi2s2, testBuffer, PATTERN_LEN) != HAL_OK) {
-//        Error_Handler();
-//    }
-//
-//    // 3) Optionally adjust the DMA mode to circular, if CubeMX left it as normal:
-//    __HAL_DMA_DISABLE(&hdma_spi2_tx);
-//    hdma_spi2_tx.Instance->CCR |= DMA_CCR_CIRC;  // set circular bit
-//    __HAL_DMA_ENABLE(&hdma_spi2_tx);
-//
-//    // Now the buffer will be replayed over and over at the I2S bitrate.
-//}
+  HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)Vblack, VID_HSIZE);
+
+  /* for TIM3: */
+
+
+  //HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, VID_HSIZE);
+
+
 
   // also i added a function for handleing
   srand(SysTick->VAL);
-  //preparePattern();
-  //startDmaLoop();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -188,7 +166,6 @@ int main(void)
   while (1)
   {
 	  show();
-	  //HAL_I2S_Transmit_DMA(&hi2s2, testBuffer, PATTERN_LEN);
 	 //HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, XFERS_PERLINE+HPORCH);
 	  //show();
     /* USER CODE END WHILE */
@@ -326,7 +303,7 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_EXTERNAL1;
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;// tigger or external
   sSlaveConfig.InputTrigger = TIM_TS_ETRF;
   sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
   sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
@@ -335,8 +312,8 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE; // CHANGED IT FROM OC4
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC4REF; // CHANGED IT FROM OC4
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();

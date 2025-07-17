@@ -12,3 +12,4 @@
 ../Core/Src/stm32g4xx_it.c:237:6:DMA1_Channel5_IRQHandler	8	static
 ../Core/Src/stm32g4xx_it.c:251:6:DMA1_Channel6_IRQHandler	8	static
 ../Core/Src/stm32g4xx_it.c:263:6:HAL_TIM_OC_DelayPulseFinishedCallback	16	static
+../Core/Src/stm32g4xx_it.c:272:6:TIM3_IRQHandler	16	static
