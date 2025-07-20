@@ -268,4 +268,33 @@ void HAL_TIM_OC_DelayPulseFinishedCallback(TIM_HandleTypeDef *htim) {
   }
 }
 
+
+void TIM3_IRQHandler(void)
+{
+    uint32_t status = TIM3->SR;
+
+    if (status & TIM_IT_CC4) {
+        /* clear just CC4 flag */
+        TIM3->SR = TIM_IT_CC4;
+
+        /* H-sync toggle on PA8 */
+        GPIOA->BSRR = (GPIO_PIN_8 << 16);  // drive PA8 low
+        GPIOA->BSRR = GPIO_PIN_8;          // drive PA8 high
+    }
+    else if (status & TIM_IT_CC1) {
+        /* clear just CC1 flag */
+        TIM3->SR = TIM_IT_CC1;
+
+        /* V-sync toggle on PA9 */
+        GPIOA->BSRR = (GPIO_PIN_9 << 16);  // drive PA9 low
+        GPIOA->BSRR = GPIO_PIN_9;          // drive PA9 high
+    }
+    else {
+        /* clear any other flags just in case */
+        TIM3->SR = 0;
+    }
+}
+
+
+
 /* USER CODE END 1 */
