@@ -187,7 +187,7 @@ int main(void)
 
   HAL_I2S_Transmit_DMA(&hi2s2,
                       (uint16_t*)lineptrs[0],
-                      LINES_PER_FIELD); // start the I2S DMA transfer);
+                      VID_HSIZE); // start the I2S DMA transfer);
 
 
 
@@ -355,7 +355,7 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC4REF;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
