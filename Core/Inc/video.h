@@ -7,6 +7,7 @@
 #define	__VIDEO_H
 #include <stdint.h>
 #define NO_TOG		0xFFFF
+#define TOTAL_LINES  (sizeof(lineptrs) / sizeof(lineptrs[0]))
 
 /* PAL synchronization signal properties
 	Pixel freq.			8 MHz
@@ -33,11 +34,11 @@ hese values match PAL video timing specifications:
 
 #define HDELAY			6		// HalfWords DMA length sync offset (I2S)
 #define HPORCH			11		// 176 dots	DMA length (in HalfWords)
-#define	XFERS_PERLINE	21		// 336 dots	DMA length (in HalfWords)
+#define	XFERS_PERLINE	21//21		// 336 dots	DMA length (in HalfWords)
 
 #define	VID_HSIZE		(HPORCH+XFERS_PERLINE)	// Horizontal line duration 11 + 21 = 32 halfwords per line
 #define	VLINES			240		// Vertical resolution (number of visible lines)
-#define BLINES			73		// invisible lines (including VSYNC)
+#define BLINES			73//73		// invisible lines (including VSYNC)
 #define	VID_VSIZE		(2 * (VLINES+BLINES) -1)	// number of lines per field 2*(240+73)-1 = 625 lines per field
 
 #define	VID_PIXELS_X	(XFERS_PERLINE * sizeof(uint16_t) * 8) // 21 * 2 * 8 = 336 pixels per line
