@@ -32,7 +32,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define TOTAL_LINES  (sizeof(lineptrs) / sizeof(lineptrs[0]))
-
+extern TIM_HandleTypeDef htim3;
 
 #define FIRST_VISIBLE_LINE  8    // skip the first 8 blank/sync lines
 volatile uint16_t lineIndex = FIRST_VISIBLE_LINE;
@@ -59,7 +59,6 @@ extern uint16_t *lineptrs[VID_VSIZE];
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -67,7 +66,6 @@ extern DMA_HandleTypeDef hdma_spi2_tx;
 extern DMA_HandleTypeDef hdma_tim3_ch1;
 extern DMA_HandleTypeDef hdma_tim3_ch3;
 extern DMA_HandleTypeDef hdma_tim3_ch4;
-extern TIM_HandleTypeDef htim3;
 /* USER CODE BEGIN EV */
 extern I2S_HandleTypeDef hi2s2;
 /* USER CODE END EV */
