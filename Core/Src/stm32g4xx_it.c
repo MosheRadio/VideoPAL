@@ -34,7 +34,7 @@
 #define TOTAL_LINES  (sizeof(lineptrs) / sizeof(lineptrs[0]))
 
 
-#define FIRST_VISIBLE_LINE  8     // skip the first 8 blank/sync lines
+#define FIRST_VISIBLE_LINE  8    // skip the first 8 blank/sync lines
 volatile uint16_t lineIndex = FIRST_VISIBLE_LINE;
 extern DMA_HandleTypeDef hdma_spi2_tx;  // your I²S‐DMA handle
 extern uint16_t *lineptrs[VID_VSIZE];

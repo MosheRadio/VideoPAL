@@ -30,7 +30,7 @@ hese values match PAL video timing specifications:
 #define PAL_Hsyncinterval			64			// microseconds per line
 #define PAL_HsyncPulsewidth			4.7			// microseconds per pulse
 #define PAL_Horizontalfrequency		(1000000 / PAL_Hsyncinterval) // 1000000/64 = 15625 Hz
-#define TIMERCOUNTS					(HSI_VALUE / PAL_Horizontalfrequency) // // 16000000/15625 = 1024 counts
+#define TIMERCOUNTS					(HSI_VALUE / PAL_Horizontalfrequency) // // 16000000/15625 = 1024 counts HSI_VALUE
 #define HSYNCCOUNTS					(TIMERCOUNTS * PAL_HsyncPulsewidth / PAL_Hsyncinterval) // 1024 * 4.7 / 64 = 76 counts
 
 #define HDELAY			6		// HalfWords DMA length sync offset (I2S)
