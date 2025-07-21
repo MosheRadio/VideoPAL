@@ -135,6 +135,8 @@ int main(void)
 //    lineptrs[L] = screen[src];
 //  }
 
+
+
   HAL_TIM_MspPostInit(&htim3);
   // add:
   HAL_NVIC_SetPriority(TIM3_IRQn, 0, 0);
@@ -145,6 +147,7 @@ int main(void)
   //HAL_TIM_Base_Start(&htim3); // start the timer for the video sync
   HAL_TIM_OC_Start(&htim2, TIM_CHANNEL_4);  // OC4Ref → TRGO
   HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_1);
+  //__HAL_TIM_ENABLE_IT(&htim3, TIM_IT_UPDATE);
 
 
 
@@ -159,17 +162,32 @@ int main(void)
 //  HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_3, (uint32_t*)lineptrs, VID_HSIZE);
 //  HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_4, (uint32_t*)borders,   VID_VSIZE);
 //  HAL_TIM_OC_Start_DMA  (&htim3, TIM_CHANNEL_1, (uint32_t*)SyncTable,  VID_HSIZE);
+
+
+//  HAL_DMA_Start(
+//    &hdma_tim3_ch1,
+//    (uint32_t)SyncTable,             // memory source
+//    (uint32_t)&TIM3->CCR1,           // peripheral dest
+//    VID_VSIZE                // number of half-words to transfer
+//  );
+
+
   HAL_DMA_Start(
     &hdma_tim3_ch1,
-    (uint32_t)SyncTable,             // memory source
-    (uint32_t)&TIM3->CCR1,           // peripheral dest
-    VID_VSIZE                // number of half-words to transfer
+    (uint32_t)SyncTable,
+    (uint32_t)&TIM3->CCR1,
+    LINES_PER_FIELD                  // one CCR1 write per line
   );
+
+
+
   __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);
+  //__HAL_DMA_ENABLE(&hdma_tim3_ch1);
+
 
   HAL_I2S_Transmit_DMA(&hi2s2,
                       (uint16_t*)lineptrs[0],
-                      VID_HSIZE); // start the I2S DMA transfer);
+                      LINES_PER_FIELD); // start the I2S DMA transfer);
 
 
 

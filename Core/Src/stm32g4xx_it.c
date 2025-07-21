@@ -32,7 +32,14 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define TOTAL_LINES  (sizeof(lineptrs) / sizeof(lineptrs[0]))
-static volatile uint16_t lineIndex = 0;
+
+
+#define FIRST_VISIBLE_LINE  8     // skip the first 8 blank/sync lines
+volatile uint16_t lineIndex = FIRST_VISIBLE_LINE;
+extern DMA_HandleTypeDef hdma_spi2_tx;  // your I²S‐DMA handle
+extern uint16_t *lineptrs[VID_VSIZE];
+
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,6 +67,7 @@ extern DMA_HandleTypeDef hdma_spi2_tx;
 extern DMA_HandleTypeDef hdma_tim3_ch1;
 extern DMA_HandleTypeDef hdma_tim3_ch3;
 extern DMA_HandleTypeDef hdma_tim3_ch4;
+extern TIM_HandleTypeDef htim3;
 /* USER CODE BEGIN EV */
 extern I2S_HandleTypeDef hi2s2;
 /* USER CODE END EV */
@@ -268,20 +276,47 @@ void DMA1_Channel6_IRQHandler(void)
 //    if (line >= VID_VSIZE) line = 0;
 //  }
 //}
+//void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
+//  if (htim->Instance == TIM3 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
+//    // 1) disable the I2S DMA
+//    __HAL_DMA_DISABLE(&hdma_spi2_tx);
+//
+//    // 2) pick next line
+//    if (++lineIndex >= VID_VSIZE) lineIndex = 0;
+//    uint16_t *ptr = lineptrs[lineIndex];
+//
+//    // 3) re‐point the DMA at your line buffer
+//    hdma_spi2_tx.Instance->CMAR  = (uint32_t)ptr;
+//    hdma_spi2_tx.Instance->CNDTR = VID_HSIZE;
+//
+//    // 4) re‐enable it
+//    __HAL_DMA_ENABLE(&hdma_spi2_tx);
+//  }
+//}
+// called on every 64 µs rollover
+// called on every timer *overflow* (64 µs)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+  if (htim->Instance == TIM3) {
+    lineIndex = FIRST_VISIBLE_LINE;
+  }
+}
+
+// called each time CC1 fires (the sync-end)
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
-  if (htim->Instance == TIM3 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
-    // 1) disable the I2S DMA
+  if (htim->Instance == TIM3 &&
+      htim->Channel  == HAL_TIM_ACTIVE_CHANNEL_1)
+  {
+    // stop the old I2S DMA
     __HAL_DMA_DISABLE(&hdma_spi2_tx);
 
-    // 2) pick next line
-    if (++lineIndex >= VID_VSIZE) lineIndex = 0;
-    uint16_t *ptr = lineptrs[lineIndex];
+    // advance & wrap *within* visible lines
+    if (++lineIndex >= VID_VSIZE) {
+      lineIndex = FIRST_VISIBLE_LINE;
+    }
 
-    // 3) re‐point the DMA at your line buffer
-    hdma_spi2_tx.Instance->CMAR  = (uint32_t)ptr;
+    // re-point and reload the I2S DMA
+    hdma_spi2_tx.Instance->CMAR  = (uint32_t)lineptrs[lineIndex];
     hdma_spi2_tx.Instance->CNDTR = VID_HSIZE;
-
-    // 4) re‐enable it
     __HAL_DMA_ENABLE(&hdma_spi2_tx);
   }
 }
@@ -289,26 +324,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
 
 void TIM3_IRQHandler(void)
 {
-	if (TIM3->SR & TIM_IT_CC1) {
-	    // clear the flag
-	    TIM3->SR = ~TIM_IT_CC1;
-
-	    // pick your next line buffer:
-	    uint16_t *nextPtr = lineptrs[lineIndex++];
-	    if (lineIndex >= TOTAL_LINES) lineIndex = 0;
-
-	    // reprogram the SPI-I2S DMA channel:
-	    DMA1_Channel5->CMAR  = (uint32_t)nextPtr;
-	    DMA1_Channel5->CNDTR = VID_HSIZE;      // reload the word-count
-	    DMA1_Channel5->CCR  |= DMA_CCR_EN;     // re-enable if it auto-cleared
-	}
-//	uint16_t reden = TIM3->SR;
-//		if (reden & TIM_IT_CC4) {		// reconfigure this Hsync timer
-//			TIM3->SR = 0;					// ~TIM_IT_Update;		// clear all but CC1
-//		} else if (reden & TIM_IT_CC1) {
-//			TIM3->SR = TIM_IT_CC4;// ~TIM_IT_CC1;		// clear all but Update
-//		} else
-//			TIM3->SR = 0;
+	HAL_TIM_IRQHandler(&htim3);
 
 }
 
