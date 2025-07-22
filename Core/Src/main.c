@@ -125,6 +125,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
 
+  //build_lineptrs();
+
 
 
   //do know if it is necessary
@@ -144,13 +146,13 @@ int main(void)
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
 
-
+  // one pointer per timer line (blank + visible + blank);
+//#define FIRST_VISIBLE_LINE  8    // skip the first 8 blank/sync lines
   // Now hook TIM3 → DMA on CH1 and CH3:
   /* for I2S: */
   //HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_3, (uint32_t*)lineptrs, VID_HSIZE);
   //HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_4, (uint32_t*)borders,   VID_VSIZE);
 //  HAL_TIM_OC_Start_DMA  (&htim3, TIM_CHANNEL_1, (uint32_t*)SyncTable,  VID_HSIZE);
-
 
 //  HAL_DMA_Start(
 //    &hdma_tim3_ch1,
@@ -160,11 +162,13 @@ int main(void)
 //  );
   // 1) VSync table → TIM3 CCR1 (already in place)
   //    - DMA1_Channel6: writes SyncTable[i] → TIM3->CCR1 each line
+
+
   HAL_DMA_Start(
     &hdma_tim3_ch1,
     (uint32_t)SyncTable,                // memory: array of CCR1 timings
     (uint32_t)&TIM3->CCR1,              // peripheral: CCR1 register
-    VID_VSIZE                           // one entry per visible line
+    652                           // one entry per visible line
   );
   __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);  // also enable CC1DE for VSync
 
@@ -173,7 +177,7 @@ int main(void)
     &hdma_tim3_ch3,
     (uint32_t)lineptrs,                 // memory: array of line-buffer addresses
     (uint32_t)&hdma_spi2_tx.Instance->CMAR,
-    VID_VSIZE
+	625//VID_VSIZE
   );
 
   // 3) BLACK-PORCH → I2S DMA CMAR at front porch (CC4)
@@ -181,14 +185,14 @@ int main(void)
     &hdma_tim3_ch4,
     (uint32_t)borders,                  // memory: single-entry blank-line buffer
     (uint32_t)&hdma_spi2_tx.Instance->CMAR,
-    VID_VSIZE
+    625// one entry per line
   );
 
   // 4) Kick off the I2S DMA stream once
   HAL_I2S_Transmit_DMA(
     &hi2s2,
-    (uint16_t*)lineptrs[0],
-    VID_HSIZE
+    (uint16_t*)Vblack,
+    VID_HSIZE// 21 + 11 = 32 half-words per line
   );
 
 //
@@ -348,7 +352,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = VID_HSIZE/4 - 1; // 32/4 -1 = 7
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 2*VID_VSIZE -1; // 2*625-1 = 1249
+  htim2.Init.Period = 2*VID_VSIZE - 1; // 2*625-1 = 1249
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -388,12 +392,7 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
-  /* enable DMA request on CC1 (VSync), CC3 (line start), CC4 (blank start) */
-  __HAL_TIM_ENABLE_DMA(&htim3,
-        TIM_DMA_CC1 |    // VSync table → CCR1
-        TIM_DMA_CC3 |    // next line buffer → I2S-DMA CMAR
-        TIM_DMA_CC4      // blank buffer → I2S-DMA CMAR
-  );
+
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);

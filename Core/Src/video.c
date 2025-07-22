@@ -261,7 +261,9 @@ uint32_t screenBB[VID_PIXELS_Y][VID_PIXELS_X] __attribute__((section (".screenBB
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
-const size_t LINES_PER_FIELD = sizeof(SyncTable)/sizeof(SyncTable[0]);
+
+
+
 void vidClearScreen(void)
 {
 //	uint8_t line;

@@ -7,8 +7,9 @@
 #define	__VIDEO_H
 #include <stdint.h>
 #define NO_TOG		0xFFFF
-#define TOTAL_LINES  (sizeof(lineptrs) / sizeof(lineptrs[0]))
+//#define TOTAL_LINES  (sizeof(lineptrs) / sizeof(lineptrs[0]))
 extern const size_t LINES_PER_FIELD;
+
 
 /* PAL synchronization signal properties
 	Pixel freq.			8 MHz
