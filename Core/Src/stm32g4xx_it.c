@@ -197,8 +197,8 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-  if (TimingDelay) {
-    TimingDelay--;
+  if (TimingDelay != 0) {
+    --TimingDelay;
   }
   /* USER CODE END SysTick_IRQn 1 */
 }
@@ -322,9 +322,21 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
 
 void TIM3_IRQHandler(void)
 {
-	HAL_TIM_IRQHandler(&htim3);
-
+//	uint16_t reden = TIM3->SR;
+//		if (reden & TIM_IT_CC4) {		// reconfigure this Hsync timer
+//
+//			TIM3->SR = 0;					// ~TIM_IT_Update;		// clear all but CC1
+//
+//		} else if (reden & TIM_IT_CC1) {
+//
+//			TIM3->SR = TIM_IT_CC4;// ~TIM_IT_CC1;		// clear all but Update
+//		// scope output on high
+//		} else
+//			TIM3->SR = 0;					// other interrupts not of interest
+	    HAL_TIM_IRQHandler(&htim3);
 }
+
+
 
 
 

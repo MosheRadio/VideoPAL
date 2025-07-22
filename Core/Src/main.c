@@ -292,7 +292,7 @@ static void MX_I2S2_Init(void)
   hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
   hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_8K;
-  hi2s2.Init.CPOL = I2S_CPOL_LOW;
+  hi2s2.Init.CPOL = I2S_CPOL_HIGH;
   if (HAL_I2S_Init(&hi2s2) != HAL_OK)
   {
     Error_Handler();
@@ -327,15 +327,15 @@ static void MX_TIM2_Init(void)
 
 
   //i should change :
-  //htim2.Init.Prescaler         = VID_HSIZE/4 - 1;
-  //htim2.Init.Period            = 2*VID_VSIZE - 1;
+  //htim2.Init.Prescaler         = VID_HSIZE/4 - 1; // 32/4 -1 = 7
+  //htim2.Init.Period            = 2*VID_VSIZE - 1; // 2*625-1 = 1249
   //sConfigOC.Pulse      = VID_VSIZE - 1;
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = VID_HSIZE/4 - 1;
+  htim2.Init.Prescaler = VID_HSIZE/4 - 1; // 32/4 -1 = 7
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 2*VID_VSIZE - 1;
+  htim2.Init.Period = 2*VID_VSIZE - 1; // 2*625-1 = 1249
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -351,7 +351,7 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;//NEEDS TO BE CHECK WITH EXTERNAL1
   sSlaveConfig.InputTrigger = TIM_TS_ETRF;
   sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
   sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
