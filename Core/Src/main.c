@@ -37,7 +37,7 @@ void show(void);
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-uint16_t fullFrame[TOTAL_LINES * VID_HSIZE];
+//uint16_t fullFrame[TOTAL_LINES * VID_HSIZE];
 
 /* USER CODE END PD */
 
@@ -123,31 +123,19 @@ int main(void)
   MX_I2S2_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  // in main(), right after all the MX_*_Init() calls:
-  // 1) clear the bit-banded screen to black
-//  memset(screen, 0, sizeof(screen));
-//  // 2) draw a single test dot (or whatever)
-//  screenBB[10][20] = 1;             // sets pixel x=20, y=10 bright
-//  // 3) rebuild the per-line pointer table
-//  for (int L = 0; L < VLINES; ++L) {
-//    int src = L - HDELAY;
-//    if (src < 0) src += VLINES;
-//    lineptrs[L] = screen[src];
-//  }
 
 
 
-  HAL_TIM_MspPostInit(&htim3);
-  // add:
-  HAL_NVIC_SetPriority(TIM3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(TIM3_IRQn);
 
   //do know if it is necessary
   HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
   //HAL_TIM_Base_Start(&htim3); // start the timer for the video sync
   HAL_TIM_OC_Start(&htim2, TIM_CHANNEL_4);  // OC4Ref → TRGO
-  HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_1);
+  //HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_1);
   //__HAL_TIM_ENABLE_IT(&htim3, TIM_IT_UPDATE);
+  // Allow TIM3 CH3/CH4 compare events to generate DMA requests
+  //__HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC3);
+  //__HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC4);
 
 
 
@@ -159,8 +147,8 @@ int main(void)
 
   // Now hook TIM3 → DMA on CH1 and CH3:
   /* for I2S: */
-//  HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_3, (uint32_t*)lineptrs, VID_HSIZE);
-//  HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_4, (uint32_t*)borders,   VID_VSIZE);
+  //HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_3, (uint32_t*)lineptrs, VID_HSIZE);
+  //HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_4, (uint32_t*)borders,   VID_VSIZE);
 //  HAL_TIM_OC_Start_DMA  (&htim3, TIM_CHANNEL_1, (uint32_t*)SyncTable,  VID_HSIZE);
 
 
@@ -170,24 +158,49 @@ int main(void)
 //    (uint32_t)&TIM3->CCR1,           // peripheral dest
 //    VID_VSIZE                // number of half-words to transfer
 //  );
-
-
+  // 1) VSync table → TIM3 CCR1 (already in place)
+  //    - DMA1_Channel6: writes SyncTable[i] → TIM3->CCR1 each line
   HAL_DMA_Start(
     &hdma_tim3_ch1,
-    (uint32_t)SyncTable,
-    (uint32_t)&TIM3->CCR1,
-    625                  // one CCR1 write per line
+    (uint32_t)SyncTable,                // memory: array of CCR1 timings
+    (uint32_t)&TIM3->CCR1,              // peripheral: CCR1 register
+    VID_VSIZE                           // one entry per visible line
+  );
+  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);  // also enable CC1DE for VSync
+
+  // 2) LINE BUFFERS → I2S DMA CMAR at back porch (CC3)
+  HAL_DMA_Start(
+    &hdma_tim3_ch3,
+    (uint32_t)lineptrs,                 // memory: array of line-buffer addresses
+    (uint32_t)&hdma_spi2_tx.Instance->CMAR,
+    VID_VSIZE
   );
 
+  // 3) BLACK-PORCH → I2S DMA CMAR at front porch (CC4)
+  HAL_DMA_Start(
+    &hdma_tim3_ch4,
+    (uint32_t)borders,                  // memory: single-entry blank-line buffer
+    (uint32_t)&hdma_spi2_tx.Instance->CMAR,
+    VID_VSIZE
+  );
+
+  // 4) Kick off the I2S DMA stream once
+  HAL_I2S_Transmit_DMA(
+    &hi2s2,
+    (uint16_t*)lineptrs[0],
+    VID_HSIZE
+  );
+
+//
+
+//
+//  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);
+//  //__HAL_DMA_ENABLE(&hdma_tim3_ch1);
 
 
-  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);
-  //__HAL_DMA_ENABLE(&hdma_tim3_ch1);
-
-
-  HAL_I2S_Transmit_DMA(&hi2s2,
-                      (uint16_t*)lineptrs[0],
-                      VID_HSIZE); // start the I2S DMA transfer);
+//  HAL_I2S_Transmit_DMA(&hi2s2,
+//                      (uint16_t*)lineptrs[0],
+//                      VID_HSIZE); // start the I2S DMA transfer);
 
 
 
@@ -335,14 +348,14 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = VID_HSIZE/4 - 1; // 32/4 -1 = 7
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 2*VID_VSIZE - 1; // 2*625-1 = 1249
+  htim2.Init.Period = 2*VID_VSIZE -1; // 2*625-1 = 1249
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
   }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_ETRMODE1;
   if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
   {
     Error_Handler();
@@ -360,7 +373,7 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC4REF;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC4REF; // OC4Ref → TRGO;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
@@ -375,7 +388,12 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
-
+  /* enable DMA request on CC1 (VSync), CC3 (line start), CC4 (blank start) */
+  __HAL_TIM_ENABLE_DMA(&htim3,
+        TIM_DMA_CC1 |    // VSync table → CCR1
+        TIM_DMA_CC3 |    // next line buffer → I2S-DMA CMAR
+        TIM_DMA_CC4      // blank buffer → I2S-DMA CMAR
+  );
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
@@ -440,7 +458,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
@@ -474,6 +492,10 @@ static void MX_TIM3_Init(void)
   //TIM_DMACmd(TIM3, TIM_DMA_CC1|TIM_DMA_CC3, ENABLE);
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+  /* Allow TIM3 Compare-3 (CC3) and Compare-4 (CC4) events to generate DMA requests */
+  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC3);   // CC3DE bit → DMA request on CC3
+  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC4);   // CC4DE bit → DMA request on CC4
+
 
 }
 

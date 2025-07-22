@@ -264,6 +264,8 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 
     __HAL_LINKDMA(htim_base,hdma[TIM_DMA_ID_CC3],hdma_tim3_ch3);
 
+
+
     /* TIM3_CH4 Init */
     hdma_tim3_ch4.Instance = DMA1_Channel3;
     hdma_tim3_ch4.Init.Request = DMA_REQUEST_TIM3_CH4;

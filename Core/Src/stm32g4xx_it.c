@@ -293,47 +293,47 @@ void DMA1_Channel6_IRQHandler(void)
 //}
 // called on every 64 µs rollover
 // called on every timer *overflow* (64 µs)
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-  if (htim->Instance == TIM3) {
-    lineIndex = FIRST_VISIBLE_LINE;
-  }
-}
-
-// called each time CC1 fires (the sync-end)
-void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
-  if (htim->Instance == TIM3 &&
-      htim->Channel  == HAL_TIM_ACTIVE_CHANNEL_1)
-  {
-    // stop the old I2S DMA
-    __HAL_DMA_DISABLE(&hdma_spi2_tx);
-
-    // advance & wrap *within* visible lines
-    if (++lineIndex >= VID_VSIZE) {
-      lineIndex = FIRST_VISIBLE_LINE;
-    }
-
-    // re-point and reload the I2S DMA
-    hdma_spi2_tx.Instance->CMAR  = (uint32_t)lineptrs[lineIndex];
-    hdma_spi2_tx.Instance->CNDTR = VID_HSIZE;
-    __HAL_DMA_ENABLE(&hdma_spi2_tx);
-  }
-}
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+//  if (htim->Instance == TIM3) {
+//    lineIndex = FIRST_VISIBLE_LINE;
+//  }
+//}
+////
+//// called each time CC1 fires (the sync-end)
+//void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
+//  if (htim->Instance == TIM3 &&
+//      htim->Channel  == HAL_TIM_ACTIVE_CHANNEL_1)
+//  {
+//    // stop the old I2S DMA
+//    __HAL_DMA_DISABLE(&hdma_spi2_tx);
+//
+//    // advance & wrap *within* visible lines
+//    if (++lineIndex >= VID_VSIZE) {
+//      lineIndex = FIRST_VISIBLE_LINE;
+//    }
+//
+//    // re-point and reload the I2S DMA
+//    hdma_spi2_tx.Instance->CMAR  = (uint32_t)lineptrs[lineIndex];
+//    hdma_spi2_tx.Instance->CNDTR = VID_HSIZE;
+//    __HAL_DMA_ENABLE(&hdma_spi2_tx);
+//  }
+//}
 
 
 void TIM3_IRQHandler(void)
 {
 //	uint16_t reden = TIM3->SR;
-//		if (reden & TIM_IT_CC4) {		// reconfigure this Hsync timer
+//	if (reden & TIM_IT_CC4) {		// reconfigure this Hsync timer
 //
-//			TIM3->SR = 0;					// ~TIM_IT_Update;		// clear all but CC1
+//		TIM3->SR = 0;					// ~TIM_IT_Update;		// clear all but CC1
 //
-//		} else if (reden & TIM_IT_CC1) {
+//	} else if (reden & TIM_IT_CC1) {
 //
-//			TIM3->SR = TIM_IT_CC4;// ~TIM_IT_CC1;		// clear all but Update
-//		// scope output on high
-//		} else
-//			TIM3->SR = 0;					// other interrupts not of interest
-	    HAL_TIM_IRQHandler(&htim3);
+//		TIM3->SR = TIM_IT_CC4;// ~TIM_IT_CC1;		// clear all but Update
+//	// scope output on high
+//	} else
+//		TIM3->SR = 0;					// other interrupts not of interest
+	  //HAL_TIM_IRQHandler(&htim3);
 }
 
 
