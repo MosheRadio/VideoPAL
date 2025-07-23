@@ -69,8 +69,10 @@ static void MX_DMA_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_I2S2_Init(void);
 static void MX_TIM3_Init(void);
-/* USER CODE BEGIN PFP */
+void Video_AdjustI2SFor8MHz(void);
+void Video_SetupTiming(void);
 
+/* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
@@ -93,6 +95,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -110,10 +113,6 @@ int main(void)
   /* USER CODE BEGIN SysInit */
 
 
-
-
-
-
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -124,21 +123,15 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
-
-  //build_lineptrs();
-
+  //Video_AdjustI2SFor8MHz();
+  //Video_SetupTiming();
+  // 1) How many timer ticks per half-word at your clock?
 
 
   //do know if it is necessary
   HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
-  //HAL_TIM_Base_Start(&htim3); // start the timer for the video sync
-  HAL_TIM_OC_Start(&htim2, TIM_CHANNEL_4);  // OC4Ref → TRGO
-  //HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_1);
-  //__HAL_TIM_ENABLE_IT(&htim3, TIM_IT_UPDATE);
-  // Allow TIM3 CH3/CH4 compare events to generate DMA requests
-  //__HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC3);
-  //__HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC4);
 
+  HAL_TIM_OC_Start(&htim2, TIM_CHANNEL_4);  // OC4Ref → TRGO
 
 
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
@@ -146,29 +139,12 @@ int main(void)
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
 
-  // one pointer per timer line (blank + visible + blank);
-//#define FIRST_VISIBLE_LINE  8    // skip the first 8 blank/sync lines
-  // Now hook TIM3 → DMA on CH1 and CH3:
-  /* for I2S: */
-  //HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_3, (uint32_t*)lineptrs, VID_HSIZE);
-  //HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_4, (uint32_t*)borders,   VID_VSIZE);
-//  HAL_TIM_OC_Start_DMA  (&htim3, TIM_CHANNEL_1, (uint32_t*)SyncTable,  VID_HSIZE);
-
-//  HAL_DMA_Start(
-//    &hdma_tim3_ch1,
-//    (uint32_t)SyncTable,             // memory source
-//    (uint32_t)&TIM3->CCR1,           // peripheral dest
-//    VID_VSIZE                // number of half-words to transfer
-//  );
-  // 1) VSync table → TIM3 CCR1 (already in place)
-  //    - DMA1_Channel6: writes SyncTable[i] → TIM3->CCR1 each line
-
 
   HAL_DMA_Start(
     &hdma_tim3_ch1,
     (uint32_t)SyncTable,                // memory: array of CCR1 timings
     (uint32_t)&TIM3->CCR1,              // peripheral: CCR1 register
-    652                           // one entry per visible line
+    325                           // one entry per visible line
   );
   __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);  // also enable CC1DE for VSync
 
@@ -177,7 +153,7 @@ int main(void)
     &hdma_tim3_ch3,
     (uint32_t)lineptrs,                 // memory: array of line-buffer addresses
     (uint32_t)&hdma_spi2_tx.Instance->CMAR,
-	625//VID_VSIZE
+	313//VID_VSIZE
   );
 
   // 3) BLACK-PORCH → I2S DMA CMAR at front porch (CC4)
@@ -185,7 +161,7 @@ int main(void)
     &hdma_tim3_ch4,
     (uint32_t)borders,                  // memory: single-entry blank-line buffer
     (uint32_t)&hdma_spi2_tx.Instance->CMAR,
-    625// one entry per line
+    313// one entry per line
   );
 
   // 4) Kick off the I2S DMA stream once
@@ -195,35 +171,9 @@ int main(void)
     VID_HSIZE// 21 + 11 = 32 half-words per line
   );
 
-//
-
-//
-//  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);
-//  //__HAL_DMA_ENABLE(&hdma_tim3_ch1);
-
-
-//  HAL_I2S_Transmit_DMA(&hi2s2,
-//                      (uint16_t*)lineptrs[0],
-//                      VID_HSIZE); // start the I2S DMA transfer);
-
-
-
-
-  //HAL_I2S_Transmit_DMA(&hi2s2, lineptrs[0], VID_HSIZE);
-  //HAL_I2S_Transmit_DMA(&hi2s2, fullFrame, TOTAL_LINES * VID_HSIZE);
-
-
-
-
-  /* for TIM3: */
-
-
-  //HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, VID_HSIZE);
-
-
 
   // also i added a function for handleing
-  srand(SysTick->VAL);
+  //srand(SysTick->VAL);
 
   /* USER CODE END 2 */
 
@@ -233,7 +183,7 @@ int main(void)
   while (1)
   {
 	  show();
-	 //HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, XFERS_PERLINE+HPORCH);
+
 	  //show();
     /* USER CODE END WHILE */
 
@@ -271,6 +221,8 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+
+  // 8mhz *12 / 2
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
@@ -316,8 +268,12 @@ static void MX_I2S2_Init(void)
   }
   /* USER CODE BEGIN I2S2_Init 2 */
   __HAL_I2S_DISABLE(&hi2s2);
-   SPI2->I2SPR = 1;   // I2SDIV = 1, ODD = 0
+  SPI2->I2SPR = (3 << SPI_I2SPR_I2SDIV_Pos)
+              | (0 << SPI_I2SPR_ODD_Pos);
+
+//   SPI2->I2SPR = 1;   // I2SDIV = 1, ODD = 0
    __HAL_I2S_ENABLE(&hi2s2);
+
   /* USER CODE END I2S2_Init 2 */
 
 }
@@ -471,18 +427,18 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = HSYNCCOUNTS;
+  sConfigOC.Pulse = HSYNCCOUNTS;//HSYNCCOUNTS;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_TIMING;
-  sConfigOC.Pulse = 208;
+  sConfigOC.Pulse = 208;//208;
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
   }
-  sConfigOC.Pulse = 880;
+  sConfigOC.Pulse = (672+208);//(672+208);
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
@@ -494,6 +450,8 @@ static void MX_TIM3_Init(void)
   /* Allow TIM3 Compare-3 (CC3) and Compare-4 (CC4) events to generate DMA requests */
   __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC3);   // CC3DE bit → DMA request on CC3
   __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC4);   // CC4DE bit → DMA request on CC4
+  //__HAL_TIM_ENABLE_OCxPRELOAD(&htim3, TIM_CHANNEL_3);
+  //__HAL_TIM_ENABLE_OCxPRELOAD(&htim3, TIM_CHANNEL_4);
 
 
 }
@@ -547,6 +505,34 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void Video_AdjustI2SFor8MHz(void) {
+    uint32_t sysclk = HAL_RCC_GetSysClockFreq();      // e.g. 96000000
+    uint32_t div    = sysclk / (2 * 8000000UL);       // floor(96e6/16e6) = 6
+    uint32_t rem    = sysclk % (2 * 8000000UL);
+    uint32_t odd    = (rem != 0);                     // only if you need sub‑pixel accuracy
+    SPI2->I2SPR = (div << SPI_I2SPR_I2SDIV_Pos)
+                | (odd << SPI_I2SPR_ODD_Pos);
+}
+//
+//void Video_SetupTiming(void) {
+//    uint32_t sys = HAL_RCC_GetSysClockFreq();     // e.g. 96000000
+//    uint32_t hf = 1000000UL / PAL_Hsyncinterval;  // 15625
+//    uint32_t cnt = sys / hf;                      // 6144 ticks/line
+//    uint32_t sync = cnt * PAL_HsyncPulsewidth / PAL_Hsyncinterval; // ~451
+//    uint32_t perHW = cnt / VID_HSIZE;             // ticks per half‑word
+//
+//    __HAL_TIM_SET_AUTORELOAD(&htim3, cnt - 1);
+//    __HAL_TIM_SET_COMPARE (&htim3, TIM_CHANNEL_2, sync);
+//    __HAL_TIM_SET_COMPARE (&htim3, TIM_CHANNEL_3,
+//                           sync + HPORCH*perHW);
+//    __HAL_TIM_SET_COMPARE (&htim3, TIM_CHANNEL_4,
+//                           sync + (HPORCH+XFERS_PERLINE)*perHW);
+//
+//    uint32_t div = sys / (2 * 8000000UL);         // e.g. 6
+//    SPI2->I2SPR = (div << SPI_I2SPR_I2SDIV_Pos)
+//                | (0 << SPI_I2SPR_ODD_Pos);
+//}
+
 
 /* USER CODE END 4 */
 

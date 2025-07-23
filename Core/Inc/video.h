@@ -28,15 +28,18 @@ hese values match PAL video timing specifications:
 625 total lines per field
 */
 
+  //sConfigOC.Pulse = HSYNCCOUNTS + HPORCH * (TIMERCOUNTS/VID_HSIZE); // 208
+
+  //sConfigOC.Pulse =  HSYNCCOUNTS + (HPORCH + XFERS_PERLINE) * (TIMERCOUNTS/VID_HSIZE);//672+208;
 #define PAL_Hsyncinterval			64			// microseconds per line
 #define PAL_HsyncPulsewidth			4.7			// microseconds per pulse
 #define PAL_Horizontalfrequency		(1000000 / PAL_Hsyncinterval) // 1000000/64 = 15625 Hz
-#define TIMERCOUNTS					(HSI_VALUE / PAL_Horizontalfrequency) // // 16000000/15625 = 1024 counts HSI_VALUE
-#define HSYNCCOUNTS					(TIMERCOUNTS * PAL_HsyncPulsewidth / PAL_Hsyncinterval) // 1024 * 4.7 / 64 = 76 counts
+#define TIMERCOUNTS					(48000000 / PAL_Horizontalfrequency) // // 16000000/15625 = 1024 counts HSI_VALUE
+#define HSYNCCOUNTS					(TIMERCOUNTS * PAL_HsyncPulsewidth / PAL_Hsyncinterval) // 1024 * 4.7 / 64 = 75.2 counts
 
-#define HDELAY			6		// HalfWords DMA length sync offset (I2S)
-#define HPORCH			11		// 176 dots	DMA length (in HalfWords)
-#define	XFERS_PERLINE	21//21		// 336 dots	DMA length (in HalfWords)
+#define HDELAY			12		// HalfWords DMA length sync offset (I2S)
+#define HPORCH			7		// 176 dots	DMA length (in HalfWords)
+#define	XFERS_PERLINE	25//21		// 336 dots	DMA length (in HalfWords)
 
 #define	VID_HSIZE		(HPORCH+XFERS_PERLINE)	// Horizontal line duration 11 + 21 = 32 halfwords per line
 #define	VLINES			240		// Vertical resolution (number of visible lines)
@@ -61,6 +64,10 @@ extern uint16_t *lineptrs[VID_VSIZE];
 extern uint16_t screen[VLINES][XFERS_PERLINE];
 extern uint32_t screenBB[VID_PIXELS_Y][VID_PIXELS_X];	/* bit banding alias of screen */
 
+//#define sync  (((TIMERCOUNTS * PAL_HsyncPulsewidth) + PAL_Hsyncinterval/2) / PAL_Hsyncinterval)
+//#define perHW (TIMERCOUNTS / VID_HSIZE)
+//#define ccr3  (sync + HPORCH * perHW)
+//#define ccr4  (ccr3 + XFERS_PERLINE *perHW)
 
 //	Function definitions
 
