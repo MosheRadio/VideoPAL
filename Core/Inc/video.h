@@ -34,12 +34,12 @@ hese values match PAL video timing specifications:
 #define PAL_Hsyncinterval			64			// microseconds per line
 #define PAL_HsyncPulsewidth			4.7			// microseconds per pulse
 #define PAL_Horizontalfrequency		(1000000 / PAL_Hsyncinterval) // 1000000/64 = 15625 Hz
-#define TIMERCOUNTS					(48000000 / PAL_Horizontalfrequency) // // 16000000/15625 = 1024 counts HSI_VALUE
+#define TIMERCOUNTS					(120000000 / PAL_Horizontalfrequency) // // 16000000/15625 = 1024 counts HSI_VALUE
 #define HSYNCCOUNTS					(TIMERCOUNTS * PAL_HsyncPulsewidth / PAL_Hsyncinterval) // 1024 * 4.7 / 64 = 75.2 counts
 
-#define HDELAY			12		// HalfWords DMA length sync offset (I2S)
-#define HPORCH			7		// 176 dots	DMA length (in HalfWords)
-#define	XFERS_PERLINE	25//21		// 336 dots	DMA length (in HalfWords)
+#define HDELAY			11		// HalfWords DMA length sync offset (I2S)
+#define HPORCH			11		// 176 dots	DMA length (in HalfWords)
+#define	XFERS_PERLINE	21//21		// 336 dots	DMA length (in HalfWords)
 
 #define	VID_HSIZE		(HPORCH+XFERS_PERLINE)	// Horizontal line duration 11 + 21 = 32 halfwords per line
 #define	VLINES			240		// Vertical resolution (number of visible lines)

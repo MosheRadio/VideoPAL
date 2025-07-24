@@ -84,6 +84,44 @@ void DelayMs(uint32_t nTime) // delay function
   while((TimingDelay != 0));
   while(Paused);
 }
+void Gpio_deinit(GPIO_TypeDef  *GPIOx){
+		for(int i =0; i<15;i++){
+			HAL_GPIO_DeInit(GPIOA, i);
+		}
+	}
+
+
+void TIMER_SET(uint32_t sys){
+
+
+	if (sys == 16000000){
+		  __HAL_I2S_DISABLE(&hi2s2);
+		   SPI2->I2SPR = 1;
+		   __HAL_I2S_ENABLE(&hi2s2);
+	}
+
+	else if(sys == 48000000){
+		  __HAL_I2S_DISABLE(&hi2s2);
+		  SPI2->I2SPR = (3 << SPI_I2SPR_I2SDIV_Pos)
+		              | (0 << SPI_I2SPR_ODD_Pos);
+		   __HAL_I2S_ENABLE(&hi2s2);
+	}
+
+	else if (sys == 96000000){
+		  __HAL_I2S_DISABLE(&hi2s2);
+		  SPI2->I2SPR = (6 << SPI_I2SPR_I2SDIV_Pos)
+		              | (0 << SPI_I2SPR_ODD_Pos);
+		   __HAL_I2S_ENABLE(&hi2s2);
+		   HAL_Delay(1);
+	}
+
+	else if(sys == 120000000){
+		__HAL_I2S_DISABLE(&hi2s2);
+		SPI2->I2SPR = (7 << SPI_I2SPR_I2SDIV_Pos) | (1 << SPI_I2SPR_ODD_Pos);
+		__HAL_I2S_ENABLE(&hi2s2);
+	}
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -94,6 +132,18 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	HAL_I2S_DeInit(&hi2s2);
+	HAL_TIM_OC_DeInit(&htim2);
+	HAL_TIM_OC_DeInit(&htim3);
+	Gpio_deinit(GPIOA);
+	Gpio_deinit(GPIOB);
+	Gpio_deinit(GPIOC);
+	HAL_DMA_DeInit(&hdma_tim3_ch1);
+	HAL_DMA_DeInit(&hdma_tim3_ch3);
+	HAL_DMA_DeInit(&hdma_spi2_tx);
+	HAL_DMA_DeInit(&hdma_tim3_ch4);
+
+
 
 
   /* USER CODE END 1 */
@@ -105,6 +155,10 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
+  /* --- Enable Flash prefetch and caches before changing SYSCLK --- */
+  __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
+  __HAL_FLASH_INSTRUCTION_CACHE_ENABLE();
+  __HAL_FLASH_DATA_CACHE_ENABLE();
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -120,8 +174,10 @@ int main(void)
   MX_DMA_Init();
   MX_TIM2_Init();
   MX_I2S2_Init();
+  TIMER_SET(HAL_RCC_GetSysClockFreq());
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+
 
   //Video_AdjustI2SFor8MHz();
   //Video_SetupTiming();
@@ -138,6 +194,7 @@ int main(void)
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // this the same
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
+
 
 
   HAL_DMA_Start(
@@ -179,10 +236,39 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
+  vidClearScreen();
+//  gdiDrawTextEx(60, 10, "Hello World!");
+//  gdiDrawTextEx(110, 60, "hey");
+//  gdiDrawTextEx(120, 70, "MOSHE");
+//  gdiDrawTextEx(130, 55, "REUT");
+  //gdiDrawTextEx(140, 90, "IDAN");
+//  gdiDrawTextEx(150, 80, "RUBEN");
+//  gdiDrawTextEx(160, 100, "a");
   while (1)
   {
-	  show();
+		for (int i=50, j=50; i < 160 && j < 150; i++ && j++) {
+            gdiDrawTextEx(i, j, "IDAN");
+//			if (i == 160 && j == 150) {
+//				i = 50;
+//				j = 50;
+//			}
+        	HAL_Delay(50);
+		}
+
+		for (int k=0; k < 100; k++) {
+			gdiDrawTextEx((100+k), 50, "I");
+			gdiDrawTextEx((105+k), 50, "D");
+			gdiDrawTextEx((110+k), 50, "A");
+			gdiDrawTextEx((115+k), 50, "N");
+			HAL_Delay(50);
+		}
+
+
+
+	  //introScreen("Hey whats up");
+
+	  //HAL_Delay(1000);
+
 
 	  //show();
     /* USER CODE END WHILE */
@@ -213,10 +299,10 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
-  RCC_OscInitStruct.PLL.PLLN = 12;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
-  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV6;
+  RCC_OscInitStruct.PLL.PLLN = 30;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV10;
+  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV8;
+  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -233,7 +319,9 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
@@ -267,12 +355,12 @@ static void MX_I2S2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN I2S2_Init 2 */
-  __HAL_I2S_DISABLE(&hi2s2);
-  SPI2->I2SPR = (3 << SPI_I2SPR_I2SDIV_Pos)
-              | (0 << SPI_I2SPR_ODD_Pos);
-
+//  __HAL_I2S_DISABLE(&hi2s2);
+////  SPI2->I2SPR = (3 << SPI_I2SPR_I2SDIV_Pos)
+////              | (0 << SPI_I2SPR_ODD_Pos);
+//
 //   SPI2->I2SPR = 1;   // I2SDIV = 1, ODD = 0
-   __HAL_I2S_ENABLE(&hi2s2);
+//   __HAL_I2S_ENABLE(&hi2s2);
 
   /* USER CODE END I2S2_Init 2 */
 
@@ -433,12 +521,12 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_TIMING;
-  sConfigOC.Pulse = 208;//208;
+  sConfigOC.Pulse = 2000;//208;
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
   }
-  sConfigOC.Pulse = (672+208);//(672+208);
+  sConfigOC.Pulse = 8000;//(672+208);//(672+208);
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
@@ -448,6 +536,7 @@ static void MX_TIM3_Init(void)
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
   /* Allow TIM3 Compare-3 (CC3) and Compare-4 (CC4) events to generate DMA requests */
+  //__HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC2);
   __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC3);   // CC3DE bit → DMA request on CC3
   __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC4);   // CC4DE bit → DMA request on CC4
   //__HAL_TIM_ENABLE_OCxPRELOAD(&htim3, TIM_CHANNEL_3);
