@@ -8,7 +8,7 @@
 #include "gdi.h"
 #include "fontsall.h"
 
-const uint8_t gdiSystemFont[][GDI_SYSFONT_HEIGHT] = {
+const uint8_t gdiSystemBigFont[][GDI_SYSFONT_HEIGHT_BIG] = {
 		//  32 $20 'U+0020'
 		//	width 7, bbx 0, bby -3, bbw 7, bbh 14
 		{	________,

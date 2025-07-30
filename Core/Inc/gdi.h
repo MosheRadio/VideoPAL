@@ -8,8 +8,12 @@
 
 //	System font
 
-#define	GDI_SYSFONT_WIDTH		6		// Width in pixels
-#define	GDI_SYSFONT_HEIGHT		10		// Height in pixels
+#define	GDI_SYSFONT_WIDTH			6		// Width in pixels
+#define	GDI_SYSFONT_HEIGHT			10		// Height in pixels
+#define	GDI_SYSFONT_WIDTH_BIG		7		// Width in pixels
+#define	GDI_SYSFONT_HEIGHT_BIG		14		// Height in pixels
+#define	GDI_SYSFONT_WIDTH_SMALL		5		// Width in pixels
+#define	GDI_SYSFONT_HEIGHT_SMALL	7		// Height in pixels
 #define	GDI_SYSFONT_OFFSET		0x20
 
 //	RASTER OPERATION

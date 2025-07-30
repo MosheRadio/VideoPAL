@@ -8,6 +8,8 @@
 //#include "mth.h"
 
 extern const uint8_t 	gdiSystemFont[][GDI_SYSFONT_HEIGHT];
+extern const uint8_t 	gdiSystemSmallFont[][GDI_SYSFONT_HEIGHT_SMALL];
+extern const uint8_t 	gdiSystemBigFont[][GDI_SYSFONT_HEIGHT_BIG];
 
 /* 		rop			Raster operation. See GDI_ROP_xxx defines */
 //uint16_t rop;	// raster operation, default = COPY (noninverted)
@@ -366,6 +368,7 @@ uint16_t	l, i, pos, xp;
 */
 void gdiDrawTextEx(int16_t x, int16_t y, char *ptext)
 {
+
 	char		c;
 
 	for (; (c = *ptext++) != 0; x += GDI_SYSFONT_WIDTH)
@@ -373,6 +376,32 @@ void gdiDrawTextEx(int16_t x, int16_t y, char *ptext)
 			gdiBitBlt(NULL, x, y, GDI_SYSFONT_WIDTH, GDI_SYSFONT_HEIGHT, (pBMP) gdiSystemFont[c-GDI_SYSFONT_OFFSET]);
 //	clip here if		if (x >= VID_PIXELS_X - GDI_SYSFONT_WIDTH)
 		// else control character handling ...
+
+}
+void gdiDrawSmallTextEx(int16_t x, int16_t y, char *ptext)
+{
+
+	char		c;
+
+	for (; (c = *ptext++) != 0; x += GDI_SYSFONT_WIDTH_SMALL)
+		if (c >= GDI_SYSFONT_OFFSET)
+			gdiBitBlt(NULL, x, y, GDI_SYSFONT_WIDTH_SMALL, GDI_SYSFONT_HEIGHT_SMALL, (pBMP) gdiSystemSmallFont[c-GDI_SYSFONT_OFFSET]);
+//	clip here if		if (x >= VID_PIXELS_X - GDI_SYSFONT_WIDTH)
+		// else control character handling ...
+
+}
+
+void gdiDrawBigTextEx(int16_t x, int16_t y, char *ptext)
+{
+
+	char		c;
+
+	for (; (c = *ptext++) != 0; x += GDI_SYSFONT_WIDTH_BIG)
+		if (c >= GDI_SYSFONT_OFFSET)
+			gdiBitBlt(NULL, x, y, GDI_SYSFONT_WIDTH_BIG, GDI_SYSFONT_HEIGHT_BIG, (pBMP) gdiSystemBigFont[c-GDI_SYSFONT_OFFSET]);
+//	clip here if		if (x >= VID_PIXELS_X - GDI_SYSFONT_WIDTH)
+		// else control character handling ...
+
 }
 #if 0
 /*

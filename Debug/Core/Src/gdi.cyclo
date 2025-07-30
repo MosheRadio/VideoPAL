@@ -1,6 +1,8 @@
-../Core/Src/gdi.c:78:6:gdiBitBlt	16
-../Core/Src/gdi.c:158:6:gdiPoint	6
-../Core/Src/gdi.c:196:6:gdiLine	10
-../Core/Src/gdi.c:261:6:gdiRectangle	1
-../Core/Src/gdi.c:280:6:gdiRectangleEx	1
-../Core/Src/gdi.c:367:6:gdiDrawTextEx	3
+../Core/Src/gdi.c:80:6:gdiBitBlt	16
+../Core/Src/gdi.c:160:6:gdiPoint	6
+../Core/Src/gdi.c:198:6:gdiLine	10
+../Core/Src/gdi.c:263:6:gdiRectangle	1
+../Core/Src/gdi.c:282:6:gdiRectangleEx	1
+../Core/Src/gdi.c:369:6:gdiDrawTextEx	3
+../Core/Src/gdi.c:381:6:gdiDrawSmallTextEx	3
+../Core/Src/gdi.c:394:6:gdiDrawBigTextEx	3

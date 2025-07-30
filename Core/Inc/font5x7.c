@@ -23,7 +23,8 @@
  * cleared.  Bit patterns are expressed using the X/_ macros defined in
  * fontsall.h for readability.
  */
-const uint8_t gdiSystemFont[][GDI_SYSFONT_HEIGHT] = {
+
+const uint8_t gdiSystemSmallFont[][GDI_SYSFONT_HEIGHT_SMALL] = {
     //  32 0x20 ' '
     {       ________,
         ________,

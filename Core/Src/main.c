@@ -247,12 +247,13 @@ int main(void)
   while (1)
   {
 		for (int i=50, j=50; i < 160 && j < 150; i++ && j++) {
-            gdiDrawTextEx(i, j, "IDAN");
+            gdiDrawSmallTextEx(i, j, "IDAN");
 //			if (i == 160 && j == 150) {
 //				i = 50;
 //				j = 50;
 //			}
         	HAL_Delay(50);
+        	vidClearScreen();
 		}
 		vidClearScreen();
 
@@ -265,6 +266,16 @@ int main(void)
 		}
 		vidClearScreen();
 
+		for (int i=50, j=50; i < 160 && j < 150; i++ && j++) {
+            gdiDrawBigTextEx(i, j, "IDAN");
+//			if (i == 160 && j == 150) {
+//				i = 50;
+//				j = 50;
+//			}
+        	HAL_Delay(50);
+        	vidClearScreen();
+		}
+		vidClearScreen();
 
 
 

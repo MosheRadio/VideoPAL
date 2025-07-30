@@ -5,13 +5,19 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../Core/Inc/font5x7.c 
+../Core/Inc/font5x7.c \
+../Core/Inc/font6x10.c \
+../Core/Inc/font7x14.c 
 
 OBJS += \
-./Core/Inc/font5x7.o 
+./Core/Inc/font5x7.o \
+./Core/Inc/font6x10.o \
+./Core/Inc/font7x14.o 
 
 C_DEPS += \
-./Core/Inc/font5x7.d 
+./Core/Inc/font5x7.d \
+./Core/Inc/font6x10.d \
+./Core/Inc/font7x14.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -21,7 +27,7 @@ Core/Inc/%.o Core/Inc/%.su Core/Inc/%.cyclo: ../Core/Inc/%.c Core/Inc/subdir.mk
 clean: clean-Core-2f-Inc
 
 clean-Core-2f-Inc:
-	-$(RM) ./Core/Inc/font5x7.cyclo ./Core/Inc/font5x7.d ./Core/Inc/font5x7.o ./Core/Inc/font5x7.su
+	-$(RM) ./Core/Inc/font5x7.cyclo ./Core/Inc/font5x7.d ./Core/Inc/font5x7.o ./Core/Inc/font5x7.su ./Core/Inc/font6x10.cyclo ./Core/Inc/font6x10.d ./Core/Inc/font6x10.o ./Core/Inc/font6x10.su ./Core/Inc/font7x14.cyclo ./Core/Inc/font7x14.d ./Core/Inc/font7x14.o ./Core/Inc/font7x14.su
 
 .PHONY: clean-Core-2f-Inc
 

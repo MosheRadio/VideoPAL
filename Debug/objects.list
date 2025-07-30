@@ -1,4 +1,6 @@
 "./Core/Inc/font5x7.o"
+"./Core/Inc/font6x10.o"
+"./Core/Inc/font7x14.o"
 "./Core/Src/gdi.o"
 "./Core/Src/main.o"
 "./Core/Src/show.o"
