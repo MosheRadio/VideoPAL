@@ -246,13 +246,14 @@ int main(void)
 //  gdiDrawTextEx(160, 100, "a");
   while (1)
   {
-		for (int i=50, j=50; i < 160 && j < 150; i++ && j++) {
+		for (int i=80, j=50; j < 150 && j < 200; i++ && j++) {
             gdiDrawTextEx(i, j, "IDAN");
 //			if (i == 160 && j == 150) {
 //				i = 50;
 //				j = 50;
 //			}
         	HAL_Delay(50);
+        	vidClearScreen();
 		}
 		vidClearScreen();
 
