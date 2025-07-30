@@ -254,6 +254,7 @@ int main(void)
 //			}
         	HAL_Delay(50);
 		}
+		vidClearScreen();
 
 		for (int k=0; k < 100; k++) {
 			gdiDrawTextEx((100+k), 50, "I");
@@ -262,6 +263,9 @@ int main(void)
 			gdiDrawTextEx((115+k), 50, "N");
 			HAL_Delay(50);
 		}
+		vidClearScreen();
+
+
 
 
 

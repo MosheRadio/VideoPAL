@@ -39,11 +39,11 @@ hese values match PAL video timing specifications:
 
 #define HDELAY			11		// HalfWords DMA length sync offset (I2S)
 #define HPORCH			11		// 176 dots	DMA length (in HalfWords)
-#define	XFERS_PERLINE	21//21		// 336 dots	DMA length (in HalfWords)
+#define	XFERS_PERLINE	21//21		// 336 dots	DMA length (in HalfWords) // 15 for 240
 
 #define	VID_HSIZE		(HPORCH+XFERS_PERLINE)	// Horizontal line duration 11 + 21 = 32 halfwords per line
-#define	VLINES			240		// Vertical resolution (number of visible lines)
-#define BLINES			73//73		// invisible lines (including VSYNC)
+#define	VLINES			240		// Vertical resolution (number of visible lines) 208 for 208
+#define BLINES			73//73		// invisible lines (including VSYNC) 312-240 = 72 lines 312-208= 104 lines
 #define	VID_VSIZE		(2 * (VLINES+BLINES) -1)	// number of lines per field 2*(240+73)-1 = 625 lines per field
 
 #define	VID_PIXELS_X	(XFERS_PERLINE * sizeof(uint16_t) * 8) // 21 * 2 * 8 = 336 pixels per line
