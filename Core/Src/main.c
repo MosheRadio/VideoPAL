@@ -24,6 +24,7 @@
 #include "stm32g4xx_hal.h"
 #include "video.h"
 #include <stdlib.h>
+#include <string.h>
 #include "stdio.h"
 
 void show(void);
@@ -36,6 +37,7 @@ void show(void);
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+//uint16_t fullFrame[TOTAL_LINES * VID_HSIZE];
 
 /* USER CODE END PD */
 
@@ -67,8 +69,10 @@ static void MX_DMA_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_I2S2_Init(void);
 static void MX_TIM3_Init(void);
-/* USER CODE BEGIN PFP */
+void Video_AdjustI2SFor8MHz(void);
+void Video_SetupTiming(void);
 
+/* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
@@ -80,6 +84,44 @@ void DelayMs(uint32_t nTime) // delay function
   while((TimingDelay != 0));
   while(Paused);
 }
+void Gpio_deinit(GPIO_TypeDef  *GPIOx){
+		for(int i =0; i<15;i++){
+			HAL_GPIO_DeInit(GPIOA, i);
+		}
+	}
+
+
+void TIMER_SET(uint32_t sys){
+
+
+	if (sys == 16000000){
+		  __HAL_I2S_DISABLE(&hi2s2);
+		   SPI2->I2SPR = 1;
+		   __HAL_I2S_ENABLE(&hi2s2);
+	}
+
+	else if(sys == 48000000){
+		  __HAL_I2S_DISABLE(&hi2s2);
+		  SPI2->I2SPR = (3 << SPI_I2SPR_I2SDIV_Pos)
+		              | (0 << SPI_I2SPR_ODD_Pos);
+		   __HAL_I2S_ENABLE(&hi2s2);
+	}
+
+	else if (sys == 96000000){
+		  __HAL_I2S_DISABLE(&hi2s2);
+		  SPI2->I2SPR = (6 << SPI_I2SPR_I2SDIV_Pos)
+		              | (0 << SPI_I2SPR_ODD_Pos);
+		   __HAL_I2S_ENABLE(&hi2s2);
+		   HAL_Delay(1);
+	}
+
+	else if(sys == 120000000){
+		__HAL_I2S_DISABLE(&hi2s2);
+		SPI2->I2SPR = (7 << SPI_I2SPR_I2SDIV_Pos) | (1 << SPI_I2SPR_ODD_Pos);
+		__HAL_I2S_ENABLE(&hi2s2);
+	}
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -90,6 +132,19 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	HAL_I2S_DeInit(&hi2s2);
+	HAL_TIM_OC_DeInit(&htim2);
+	HAL_TIM_OC_DeInit(&htim3);
+	Gpio_deinit(GPIOA);
+	Gpio_deinit(GPIOB);
+	Gpio_deinit(GPIOC);
+	HAL_DMA_DeInit(&hdma_tim3_ch1);
+	HAL_DMA_DeInit(&hdma_tim3_ch3);
+	HAL_DMA_DeInit(&hdma_spi2_tx);
+	HAL_DMA_DeInit(&hdma_tim3_ch4);
+
+
+
 
   /* USER CODE END 1 */
 
@@ -100,16 +155,16 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
+  /* --- Enable Flash prefetch and caches before changing SYSCLK --- */
+  __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
+  __HAL_FLASH_INSTRUCTION_CACHE_ENABLE();
+  __HAL_FLASH_DATA_CACHE_ENABLE();
   /* USER CODE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
-
-
-
 
 
   /* USER CODE END SysInit */
@@ -119,11 +174,20 @@ int main(void)
   MX_DMA_Init();
   MX_TIM2_Init();
   MX_I2S2_Init();
+  TIMER_SET(HAL_RCC_GetSysClockFreq());
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+
+
+  //Video_AdjustI2SFor8MHz();
+  //Video_SetupTiming();
+  // 1) How many timer ticks per half-word at your clock?
+
+
   //do know if it is necessary
   HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
-  HAL_TIM_Base_Start(&htim3); // start the timer for the video sync
+
+  HAL_TIM_OC_Start(&htim2, TIM_CHANNEL_4);  // OC4Ref → TRGO
 
 
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
@@ -132,41 +196,84 @@ int main(void)
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
 
 
-  // Now hook TIM3 → DMA on CH1 and CH3:
-  /* for I2S: */
-//  HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_3, (uint32_t*)lineptrs, VID_HSIZE);
-//  HAL_TIM_PWM_Start_DMA (&htim3, TIM_CHANNEL_4, (uint32_t*)borders,   VID_VSIZE);
-//  HAL_TIM_OC_Start_DMA  (&htim3, TIM_CHANNEL_1, (uint32_t*)SyncTable,  VID_HSIZE);
+
   HAL_DMA_Start(
     &hdma_tim3_ch1,
-    (uint32_t)SyncTable,             // memory source
-    (uint32_t)&TIM3->CCR1,           // peripheral dest
-    652
+    (uint32_t)SyncTable,                // memory: array of CCR1 timings
+    (uint32_t)&TIM3->CCR1,              // peripheral: CCR1 register
+    325                           // one entry per visible line
   );
-  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);
+  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);  // also enable CC1DE for VSync
 
+  // 2) LINE BUFFERS → I2S DMA CMAR at back porch (CC3)
+  HAL_DMA_Start(
+    &hdma_tim3_ch3,
+    (uint32_t)lineptrs,                 // memory: array of line-buffer addresses
+    (uint32_t)&hdma_spi2_tx.Instance->CMAR,
+	313//VID_VSIZE
+  );
 
+  // 3) BLACK-PORCH → I2S DMA CMAR at front porch (CC4)
+  HAL_DMA_Start(
+    &hdma_tim3_ch4,
+    (uint32_t)borders,                  // memory: single-entry blank-line buffer
+    (uint32_t)&hdma_spi2_tx.Instance->CMAR,
+    313// one entry per line
+  );
 
-  HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)Vblack, VID_HSIZE);
-
-  /* for TIM3: */
-
-
-  //HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, VID_HSIZE);
-
+  // 4) Kick off the I2S DMA stream once
+  HAL_I2S_Transmit_DMA(
+    &hi2s2,
+    (uint16_t*)Vblack,
+    VID_HSIZE// 21 + 11 = 32 half-words per line
+  );
 
 
   // also i added a function for handleing
-  srand(SysTick->VAL);
+  //srand(SysTick->VAL);
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  vidClearScreen();
+//  gdiDrawTextEx(60, 10, "Hello World!");
+//  gdiDrawTextEx(110, 60, "hey");
+//  gdiDrawTextEx(120, 70, "MOSHE");
+//  gdiDrawTextEx(130, 55, "REUT");
+  //gdiDrawTextEx(140, 90, "IDAN");
+//  gdiDrawTextEx(150, 80, "RUBEN");
+//  gdiDrawTextEx(160, 100, "a");
   while (1)
   {
-	  show();
-	 //HAL_I2S_Transmit_DMA(&hi2s2, Vwhite, XFERS_PERLINE+HPORCH);
+		for (int i=50, j=50; i < 160 && j < 150; i++ && j++) {
+            gdiDrawTextEx(i, j, "IDAN");
+//			if (i == 160 && j == 150) {
+//				i = 50;
+//				j = 50;
+//			}
+        	HAL_Delay(50);
+		}
+		vidClearScreen();
+
+		for (int k=0; k < 100; k++) {
+			gdiDrawTextEx((100+k), 50, "I");
+			gdiDrawTextEx((105+k), 50, "D");
+			gdiDrawTextEx((110+k), 50, "A");
+			gdiDrawTextEx((115+k), 50, "N");
+			HAL_Delay(50);
+		}
+		vidClearScreen();
+
+
+
+
+
+	  //introScreen("Hey whats up");
+
+	  //HAL_Delay(1000);
+
+
 	  //show();
     /* USER CODE END WHILE */
 
@@ -191,25 +298,34 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
+  RCC_OscInitStruct.PLL.PLLN = 30;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV10;
+  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV8;
+  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
   }
 
+  // 8mhz *12 / 2
+
   /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
@@ -236,16 +352,20 @@ static void MX_I2S2_Init(void)
   hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
-  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_8K; // 8 MHz for 16 MHz HCLK; 8000000
+  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_8K;
   hi2s2.Init.CPOL = I2S_CPOL_HIGH;
   if (HAL_I2S_Init(&hi2s2) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN I2S2_Init 2 */
-  __HAL_I2S_DISABLE(&hi2s2);
-   SPI2->I2SPR = 1;   // I2SDIV = 1, ODD = 0
-   __HAL_I2S_ENABLE(&hi2s2);
+//  __HAL_I2S_DISABLE(&hi2s2);
+////  SPI2->I2SPR = (3 << SPI_I2SPR_I2SDIV_Pos)
+////              | (0 << SPI_I2SPR_ODD_Pos);
+//
+//   SPI2->I2SPR = 1;   // I2SDIV = 1, ODD = 0
+//   __HAL_I2S_ENABLE(&hi2s2);
+
   /* USER CODE END I2S2_Init 2 */
 
 }
@@ -255,7 +375,6 @@ static void MX_I2S2_Init(void)
   * @param None
   * @retval None
   */
-
 static void MX_TIM2_Init(void)
 {
 
@@ -273,28 +392,22 @@ static void MX_TIM2_Init(void)
 
 
   //i should change :
-  //htim2.Init.Prescaler         = VID_HSIZE/4 - 1;
-  //htim2.Init.Period            = 2*VID_VSIZE - 1;
+  //htim2.Init.Prescaler         = VID_HSIZE/4 - 1; // 32/4 -1 = 7
+  //htim2.Init.Period            = 2*VID_VSIZE - 1; // 2*625-1 = 1249
   //sConfigOC.Pulse      = VID_VSIZE - 1;
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = VID_HSIZE/4 - 1; // 32/4 - 1 = 7
+  htim2.Init.Prescaler = VID_HSIZE/4 - 1; // 32/4 -1 = 7
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 2*VID_VSIZE - 1; // 2*625 - 1 = 1249, and i need half -so i cut it by half (instead of 2*) i had
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.Period = 2*VID_VSIZE - 1; // 2*625-1 = 1249
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
   }
-  // chat told me to add - this is external then the ioc aoutumatics
-  sClockSourceConfig.ClockSource    = TIM_CLOCKSOURCE_ETRMODE1;  // CHANGE it from INTERNAL to ETRMODE1
-  sClockSourceConfig.ClockPolarity  = TIM_CLOCKPOLARITY_NONINVERTED;
-  sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
-  sClockSourceConfig.ClockFilter    = 0;
-
-
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_ETRMODE1;
   if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
   {
     Error_Handler();
@@ -303,7 +416,7 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;// tigger or external
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;//NEEDS TO BE CHECK WITH EXTERNAL1
   sSlaveConfig.InputTrigger = TIM_TS_ETRF;
   sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_NONINVERTED;
   sSlaveConfig.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
@@ -312,14 +425,14 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC4REF; // CHANGED IT FROM OC4
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC4REF; // OC4Ref → TRGO;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = VID_VSIZE - 1;
+  sConfigOC.Pulse =  VID_VSIZE - 1;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
@@ -365,7 +478,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = TIMERCOUNTS - 1; //  // 1024 - 1 = 1023
+  htim3.Init.Period = TIMERCOUNTS - 1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -377,7 +490,6 @@ static void MX_TIM3_Init(void)
   {
     Error_Handler();
   }
-
   if (HAL_TIM_OC_Init(&htim3) != HAL_OK)
   {
     Error_Handler();
@@ -393,12 +505,11 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  //VSYNC on CH1:
   sConfigOC.OCMode = TIM_OCMODE_TOGGLE;
   sConfigOC.Pulse = NO_TOG;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
@@ -407,23 +518,19 @@ static void MX_TIM3_Init(void)
   {
     Error_Handler();
   }
-  // HSYNC on CH2:
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = HSYNCCOUNTS;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW; // I SHOULD HAVE THIS? I ADDED IT
+  sConfigOC.Pulse = HSYNCCOUNTS;//HSYNCCOUNTS;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
-  // Back-porch start on CH3:
   sConfigOC.OCMode = TIM_OCMODE_TIMING;
-  sConfigOC.Pulse = HPORCH * (TIMERCOUNTS / XFERS_PERLINE); // WAS 208 HPORCH * (TIMERCOUNTS / XFERS_PERLINE); = 11 * (1024 / 21) = 536
+  sConfigOC.Pulse = 2000;//208;
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
   }
-  // Active-video off on CH4:
-  sConfigOC.Pulse = (HPORCH + XFERS_PERLINE) * (TIMERCOUNTS / XFERS_PERLINE); // WAS 880 (HPORCH + XFERS_PERLINE) * (TIMERCOUNTS / XFERS_PERLINE); = (11 + 21) * (1024/21) = 1560
+  sConfigOC.Pulse = 8000;//(672+208);//(672+208);
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
@@ -432,6 +539,12 @@ static void MX_TIM3_Init(void)
   //TIM_DMACmd(TIM3, TIM_DMA_CC1|TIM_DMA_CC3, ENABLE);
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+  /* Allow TIM3 Compare-3 (CC3) and Compare-4 (CC4) events to generate DMA requests */
+  //__HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC2);
+  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC3);   // CC3DE bit → DMA request on CC3
+  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC4);   // CC4DE bit → DMA request on CC4
+  //__HAL_TIM_ENABLE_OCxPRELOAD(&htim3, TIM_CHANNEL_3);
+  //__HAL_TIM_ENABLE_OCxPRELOAD(&htim3, TIM_CHANNEL_4);
 
 
 }
@@ -474,15 +587,45 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
+
   /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
+void Video_AdjustI2SFor8MHz(void) {
+    uint32_t sysclk = HAL_RCC_GetSysClockFreq();      // e.g. 96000000
+    uint32_t div    = sysclk / (2 * 8000000UL);       // floor(96e6/16e6) = 6
+    uint32_t rem    = sysclk % (2 * 8000000UL);
+    uint32_t odd    = (rem != 0);                     // only if you need sub‑pixel accuracy
+    SPI2->I2SPR = (div << SPI_I2SPR_I2SDIV_Pos)
+                | (odd << SPI_I2SPR_ODD_Pos);
+}
+//
+//void Video_SetupTiming(void) {
+//    uint32_t sys = HAL_RCC_GetSysClockFreq();     // e.g. 96000000
+//    uint32_t hf = 1000000UL / PAL_Hsyncinterval;  // 15625
+//    uint32_t cnt = sys / hf;                      // 6144 ticks/line
+//    uint32_t sync = cnt * PAL_HsyncPulsewidth / PAL_Hsyncinterval; // ~451
+//    uint32_t perHW = cnt / VID_HSIZE;             // ticks per half‑word
+//
+//    __HAL_TIM_SET_AUTORELOAD(&htim3, cnt - 1);
+//    __HAL_TIM_SET_COMPARE (&htim3, TIM_CHANNEL_2, sync);
+//    __HAL_TIM_SET_COMPARE (&htim3, TIM_CHANNEL_3,
+//                           sync + HPORCH*perHW);
+//    __HAL_TIM_SET_COMPARE (&htim3, TIM_CHANNEL_4,
+//                           sync + (HPORCH+XFERS_PERLINE)*perHW);
+//
+//    uint32_t div = sys / (2 * 8000000UL);         // e.g. 6
+//    SPI2->I2SPR = (div << SPI_I2SPR_I2SDIV_Pos)
+//                | (0 << SPI_I2SPR_ODD_Pos);
+//}
+
 
 /* USER CODE END 4 */
 

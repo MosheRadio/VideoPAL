@@ -22,8 +22,8 @@ typedef enum {
 } RasterOP;
 
 //#define KOPTEKST	"STM32L100RC"
-#define KOPTEKST    "STM32G474RE"
-#define SUBTITEL	"PAL VIDEO DEMONSTRATION"
+#define KOPTEKST    "MOSHE IS THE KING"//"STM32G474RE"
+#define SUBTITEL	"IDAN WHEN WE EAT TODAY?"
 
 typedef struct
 {

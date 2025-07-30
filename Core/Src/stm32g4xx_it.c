@@ -31,6 +31,14 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define TOTAL_LINES  (sizeof(lineptrs) / sizeof(lineptrs[0]))
+extern TIM_HandleTypeDef htim3;
+
+#define FIRST_VISIBLE_LINE  8    // skip the first 8 blank/sync lines
+volatile uint16_t lineIndex = FIRST_VISIBLE_LINE;
+extern DMA_HandleTypeDef hdma_spi2_tx;  // your I²S‐DMA handle
+extern uint16_t *lineptrs[VID_VSIZE];
+
 
 /* USER CODE END PD */
 
@@ -51,7 +59,6 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -190,8 +197,8 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-  if (TimingDelay) {
-    TimingDelay--;
+  if (TimingDelay != 0) {
+    --TimingDelay;
   }
   /* USER CODE END SysTick_IRQn 1 */
 }
@@ -260,40 +267,76 @@ void DMA1_Channel6_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
-void HAL_TIM_OC_DelayPulseFinishedCallback(TIM_HandleTypeDef *htim) {
-  if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
-    static int line = 0;
-    HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)lineptrs[line++], VID_HSIZE);
-    if (line >= VID_VSIZE) line = 0;
-  }
-}
+//void HAL_TIM_OC_DelayPulseFinishedCallback(TIM_HandleTypeDef *htim) {
+//  if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
+//    static int line = 0;
+//    HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)lineptrs[line++], VID_HSIZE);
+//    if (line >= VID_VSIZE) line = 0;
+//  }
+//}
+//void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
+//  if (htim->Instance == TIM3 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
+//    // 1) disable the I2S DMA
+//    __HAL_DMA_DISABLE(&hdma_spi2_tx);
+//
+//    // 2) pick next line
+//    if (++lineIndex >= VID_VSIZE) lineIndex = 0;
+//    uint16_t *ptr = lineptrs[lineIndex];
+//
+//    // 3) re‐point the DMA at your line buffer
+//    hdma_spi2_tx.Instance->CMAR  = (uint32_t)ptr;
+//    hdma_spi2_tx.Instance->CNDTR = VID_HSIZE;
+//
+//    // 4) re‐enable it
+//    __HAL_DMA_ENABLE(&hdma_spi2_tx);
+//  }
+//}
+// called on every 64 µs rollover
+// called on every timer *overflow* (64 µs)
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+//  if (htim->Instance == TIM3) {
+//    lineIndex = FIRST_VISIBLE_LINE;
+//  }
+//}
+////
+//// called each time CC1 fires (the sync-end)
+//void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
+//  if (htim->Instance == TIM3 &&
+//      htim->Channel  == HAL_TIM_ACTIVE_CHANNEL_1)
+//  {
+//    // stop the old I2S DMA
+//    __HAL_DMA_DISABLE(&hdma_spi2_tx);
+//
+//    // advance & wrap *within* visible lines
+//    if (++lineIndex >= VID_VSIZE) {
+//      lineIndex = FIRST_VISIBLE_LINE;
+//    }
+//
+//    // re-point and reload the I2S DMA
+//    hdma_spi2_tx.Instance->CMAR  = (uint32_t)lineptrs[lineIndex];
+//    hdma_spi2_tx.Instance->CNDTR = VID_HSIZE;
+//    __HAL_DMA_ENABLE(&hdma_spi2_tx);
+//  }
+//}
 
 
 void TIM3_IRQHandler(void)
 {
-    uint32_t status = TIM3->SR;
-
-    if (status & TIM_IT_CC4) {
-        /* clear just CC4 flag */
-        TIM3->SR = TIM_IT_CC4;
-
-        /* H-sync toggle on PA8 */
-        GPIOA->BSRR = (GPIO_PIN_8 << 16);  // drive PA8 low
-        GPIOA->BSRR = GPIO_PIN_8;          // drive PA8 high
-    }
-    else if (status & TIM_IT_CC1) {
-        /* clear just CC1 flag */
-        TIM3->SR = TIM_IT_CC1;
-
-        /* V-sync toggle on PA9 */
-        GPIOA->BSRR = (GPIO_PIN_9 << 16);  // drive PA9 low
-        GPIOA->BSRR = GPIO_PIN_9;          // drive PA9 high
-    }
-    else {
-        /* clear any other flags just in case */
-        TIM3->SR = 0;
-    }
+//	uint16_t reden = TIM3->SR;
+//	if (reden & TIM_IT_CC4) {		// reconfigure this Hsync timer
+//
+//		TIM3->SR = 0;					// ~TIM_IT_Update;		// clear all but CC1
+//
+//	} else if (reden & TIM_IT_CC1) {
+//
+//		TIM3->SR = TIM_IT_CC4;// ~TIM_IT_CC1;		// clear all but Update
+//	// scope output on high
+//	} else
+//		TIM3->SR = 0;					// other interrupts not of interest
+	  //HAL_TIM_IRQHandler(&htim3);
 }
+
+
 
 
 

@@ -262,6 +262,8 @@ uint32_t screenBB[VID_PIXELS_Y][VID_PIXELS_X] __attribute__((section (".screenBB
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
+
+
 void vidClearScreen(void)
 {
 //	uint8_t line;

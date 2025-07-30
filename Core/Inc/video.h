@@ -7,6 +7,9 @@
 #define	__VIDEO_H
 #include <stdint.h>
 #define NO_TOG		0xFFFF
+//#define TOTAL_LINES  (sizeof(lineptrs) / sizeof(lineptrs[0]))
+extern const size_t LINES_PER_FIELD;
+
 
 /* PAL synchronization signal properties
 	Pixel freq.			8 MHz
@@ -25,19 +28,22 @@ hese values match PAL video timing specifications:
 625 total lines per field
 */
 
+  //sConfigOC.Pulse = HSYNCCOUNTS + HPORCH * (TIMERCOUNTS/VID_HSIZE); // 208
+
+  //sConfigOC.Pulse =  HSYNCCOUNTS + (HPORCH + XFERS_PERLINE) * (TIMERCOUNTS/VID_HSIZE);//672+208;
 #define PAL_Hsyncinterval			64			// microseconds per line
 #define PAL_HsyncPulsewidth			4.7			// microseconds per pulse
 #define PAL_Horizontalfrequency		(1000000 / PAL_Hsyncinterval) // 1000000/64 = 15625 Hz
-#define TIMERCOUNTS					(HSI_VALUE / PAL_Horizontalfrequency) // // 16000000/15625 = 1024 counts
-#define HSYNCCOUNTS					(TIMERCOUNTS * PAL_HsyncPulsewidth / PAL_Hsyncinterval) // 1024 * 4.7 / 64 = 76 counts
+#define TIMERCOUNTS					(120000000 / PAL_Horizontalfrequency) // // 16000000/15625 = 1024 counts HSI_VALUE
+#define HSYNCCOUNTS					(TIMERCOUNTS * PAL_HsyncPulsewidth / PAL_Hsyncinterval) // 1024 * 4.7 / 64 = 75.2 counts
 
-#define HDELAY			6		// HalfWords DMA length sync offset (I2S)
+#define HDELAY			11		// HalfWords DMA length sync offset (I2S)
 #define HPORCH			11		// 176 dots	DMA length (in HalfWords)
-#define	XFERS_PERLINE	21		// 336 dots	DMA length (in HalfWords)
+#define	XFERS_PERLINE	21//21		// 336 dots	DMA length (in HalfWords) // 15 for 240
 
 #define	VID_HSIZE		(HPORCH+XFERS_PERLINE)	// Horizontal line duration 11 + 21 = 32 halfwords per line
-#define	VLINES			240		// Vertical resolution (number of visible lines)
-#define BLINES			73		// invisible lines (including VSYNC)
+#define	VLINES			240		// Vertical resolution (number of visible lines) 208 for 208
+#define BLINES			73//73		// invisible lines (including VSYNC) 312-240 = 72 lines 312-208= 104 lines
 #define	VID_VSIZE		(2 * (VLINES+BLINES) -1)	// number of lines per field 2*(240+73)-1 = 625 lines per field
 
 #define	VID_PIXELS_X	(XFERS_PERLINE * sizeof(uint16_t) * 8) // 21 * 2 * 8 = 336 pixels per line
@@ -58,6 +64,10 @@ extern uint16_t *lineptrs[VID_VSIZE];
 extern uint16_t screen[VLINES][XFERS_PERLINE];
 extern uint32_t screenBB[VID_PIXELS_Y][VID_PIXELS_X];	/* bit banding alias of screen */
 
+//#define sync  (((TIMERCOUNTS * PAL_HsyncPulsewidth) + PAL_Hsyncinterval/2) / PAL_Hsyncinterval)
+//#define perHW (TIMERCOUNTS / VID_HSIZE)
+//#define ccr3  (sync + HPORCH * perHW)
+//#define ccr4  (ccr3 + XFERS_PERLINE *perHW)
 
 //	Function definitions
 
