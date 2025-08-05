@@ -236,7 +236,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  vidClearScreen();
+  //vidClearScreen();
 //  gdiDrawTextEx(60, 10, "Hello World!");
 //  gdiDrawTextEx(110, 60, "hey");
 //  gdiDrawTextEx(120, 70, "MOSHE");
@@ -245,10 +245,31 @@ int main(void)
 //  gdiDrawTextEx(150, 80, "RUBEN");
 //  gdiDrawTextEx(160, 100, "a");
 
-
+  static uint8_t rx_byte;
+  vt100_init();
   while (1)
   {
-		for (int i=50, j=50; i < 160 && j < 150; i++ && j++) {
+	  for (int i = 0 ; i < 100; i++){
+		  if (i == 0 )
+			  vt100_feed(0x1b);
+		  else if (i == 1)
+			  vt100_feed('[');
+		  else if (i == 2)
+			  vt100_feed('A');
+		  else if (i == 3)
+			  vt100_feed('A');
+		  else if (i == 4)
+			  vt100_feed(0x1b);
+		  else if (i == 5)
+			  vt100_feed('[');
+		  else if (i == 6)
+			  vt100_feed('H');
+		  else
+			  vt100_feed(' ');
+		  HAL_DELAY(1000);
+	  }
+
+/*		for (int i=50, j=50; i < 160 && j < 150; i++ && j++) {
             gdiDrawSmallTextEx(i, j, "IDAN");
 //			if (i == 160 && j == 150) {
 //				i = 50;
@@ -277,7 +298,7 @@ int main(void)
         	HAL_Delay(50);
         	vidClearScreen();
 		}
-		vidClearScreen();
+		vidClearScreen();*/
 
 
 
@@ -291,7 +312,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+
   /* USER CODE END 3 */
 }
 

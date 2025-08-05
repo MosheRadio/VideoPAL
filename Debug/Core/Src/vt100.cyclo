@@ -1,0 +1,3 @@
+../Core/Src/vt100.c:25:6:vt100_init	1
+../Core/Src/vt100.c:42:6:vt100_feed	1
+../Core/Src/vt100.c:54:6:vt100_process_buffer	1

@@ -1,0 +1,3 @@
+../Core/Src/vt100.c:25:6:vt100_init	8	static
+../Core/Src/vt100.c:42:6:vt100_feed	16	static
+../Core/Src/vt100.c:54:6:vt100_process_buffer	16	static

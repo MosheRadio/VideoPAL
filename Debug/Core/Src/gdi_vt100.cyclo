@@ -1,0 +1,8 @@
+../Core/Src/gdi_vt100.c:26:6:gdiSetCursor	5
+../Core/Src/gdi_vt100.c:38:6:gdiGetCursor	3
+../Core/Src/gdi_vt100.c:45:6:gdiClearScreen	1
+../Core/Src/gdi_vt100.c:55:6:gdiPutChar	6
+../Core/Src/gdi_vt100.c:90:12:parse_csi_number	2
+../Core/Src/gdi_vt100.c:108:6:gdiHandleCSI	12
+../Core/Src/gdi_vt100.c:169:6:gdiVT100Feed	10
+../Core/Src/gdi_vt100.c:212:6:gdiVT100ProcessBuffer	2
