@@ -244,6 +244,8 @@ int main(void)
   //gdiDrawTextEx(140, 90, "IDAN");
 //  gdiDrawTextEx(150, 80, "RUBEN");
 //  gdiDrawTextEx(160, 100, "a");
+
+
   while (1)
   {
 		for (int i=50, j=50; i < 160 && j < 150; i++ && j++) {

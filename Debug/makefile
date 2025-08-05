@@ -61,8 +61,8 @@ all: main-build
 main-build: VideoStm.elf secondary-outputs
 
 # Tool invocations
-VideoStm.elf VideoStm.map: $(OBJS) $(USER_OBJS) /home/sason/STM32CubeIDE/workspace_1.19.0/VideoStm/STM32G474RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "VideoStm.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/sason/STM32CubeIDE/workspace_1.19.0/VideoStm/STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="VideoStm.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+VideoStm.elf VideoStm.map: $(OBJS) $(USER_OBJS) /home/moshe/RadioMati/VideoPAL/STM32G474RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "VideoStm.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/moshe/RadioMati/VideoPAL/STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="VideoStm.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
