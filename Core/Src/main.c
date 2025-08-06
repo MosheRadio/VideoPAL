@@ -128,7 +128,7 @@ void demo_no_uart_run(void)
     gdiClearScreen();
 
     /* List of names to display. */
-    const char *names[] = { "Moshe", "Idan", "Lior", "Reut" };
+    const char *names[] = { "Moshe", "Idan", "Lior", "Reut", "Davidi" };
     const int count = sizeof(names) / sizeof(names[0]);
 
     /* For each name, compute the x coordinate such that the text
@@ -136,8 +136,8 @@ void demo_no_uart_run(void)
      * the cursor and print the characters one by one.  After each
      * name, wait for a second. */
     for (int i = 0; i < count; ++i) {
-        int len = strlen(names[i]);
-        int x = VID_PIXELS_X - len * GDI_SYSFONT_WIDTH;
+        //int len = strlen(names[i]);
+        int x = VID_PIXELS_X/2 - 5 * GDI_SYSFONT_WIDTH;
         int y = i * GDI_SYSFONT_HEIGHT;
         gdiSetCursor(x, y);
         for (const char *p = names[i]; *p; ++p) {
@@ -148,6 +148,110 @@ void demo_no_uart_run(void)
     }
 }
 
+void demo_vt100_commands(void)
+{
+    const char CURSOR_CHAR = '*';  // Visible cursor character
+    
+    /* Helper function to print cursor position */
+    void print_cursor(void) {
+        gdiPutChar(CURSOR_CHAR);
+        HAL_Delay(500);  // Show cursor briefly
+    }
+
+    /* Clear the screen and reset cursor position */
+    vt100_init();
+    HAL_Delay(500);
+
+    /* Center position calculation */
+    const int center_x = VID_PIXELS_X/2 - 10 * GDI_SYSFONT_WIDTH;
+    const int center_y = VID_PIXELS_Y/2 - 5 * GDI_SYSFONT_HEIGHT;
+    
+    /* Test 1: Direct cursor positioning */
+    gdiSetCursor(center_x, center_y - 3 * GDI_SYSFONT_HEIGHT);
+    const char *cmd1 = "Testing ESC[H - Cursor Home";
+    for(const char *p = cmd1; *p; p++) {
+        gdiPutChar(*p);
+    }
+    HAL_Delay(1000);
+    vt100_process_buffer((const uint8_t*)"\x1B[H", 3); // Move cursor to home
+    print_cursor();
+    HAL_Delay(1000);
+
+    /* Test 2: Clear screen */
+    gdiSetCursor(center_x, center_y - 2 * GDI_SYSFONT_HEIGHT);
+    const char *cmd2 = "Testing ESC[2J - Clear Screen";
+    for(const char *p = cmd2; *p; p++) {
+        gdiPutChar(*p);
+    }
+    HAL_Delay(1000);
+    vt100_process_buffer((const uint8_t*)"\x1B[2J", 4);
+    print_cursor();
+    HAL_Delay(1000);
+
+    /* Test 3: Cursor movement up */
+    gdiSetCursor(center_x, center_y);
+    const char *cmd3 = "Testing ESC[A - Cursor Up";
+    for(const char *p = cmd3; *p; p++) {
+        gdiPutChar(*p);
+    }
+    HAL_Delay(1000);
+    vt100_process_buffer((const uint8_t*)"\x1B[2A", 4); // Move up 2 lines
+    print_cursor();
+    HAL_Delay(1000);
+
+    /* Test 4: Cursor movement down */
+    gdiSetCursor(center_x, center_y);
+    const char *cmd4 = "Testing ESC[B - Cursor Down";
+    for(const char *p = cmd4; *p; p++) {
+        gdiPutChar(*p);
+    }
+    HAL_Delay(1000);
+    vt100_process_buffer((const uint8_t*)"\x1B[2B", 4); // Move down 2 lines
+    print_cursor();
+    HAL_Delay(1000);
+
+    /* Test 5: Cursor movement right */
+    gdiSetCursor(center_x, center_y);
+    const char *cmd5 = "Testing ESC[C - Cursor Right";
+    for(const char *p = cmd5; *p; p++) {
+        gdiPutChar(*p);
+    }
+    HAL_Delay(1000);
+    vt100_process_buffer((const uint8_t*)"\x1B[5C", 4); // Move right 5 chars
+    print_cursor();
+    HAL_Delay(1000);
+
+    /* Test 6: Cursor movement left */
+    gdiSetCursor(center_x, center_y);
+    const char *cmd6 = "Testing ESC[D - Cursor Left";
+    for(const char *p = cmd6; *p; p++) {
+        gdiPutChar(*p);
+    }
+    HAL_Delay(1000);
+    vt100_process_buffer((const uint8_t*)"\x1B[5D", 4); // Move left 5 chars
+    print_cursor();
+    HAL_Delay(1000);
+
+    /* Test 7: Absolute cursor positioning */
+    gdiSetCursor(center_x, center_y);
+    const char *cmd7 = "Testing ESC[row;colH - Absolute Position";
+    for(const char *p = cmd7; *p; p++) {
+        gdiPutChar(*p);
+    }
+    HAL_Delay(1000);
+    vt100_process_buffer((const uint8_t*)"\x1B[12;40H", 8); // Move to row 12, col 40
+    print_cursor();
+    HAL_Delay(1000);
+
+    /* Final message */
+    vt100_process_buffer((const uint8_t*)"\x1B[2J", 4); // Clear screen
+    gdiSetCursor(center_x, center_y);
+    const char *final = "VT100 Command Demo Complete!";
+    for(const char *p = final; p++;) {
+        gdiPutChar(*p);
+    }
+    HAL_Delay(2000);
+}
 
 /* USER CODE END 0 */
 
@@ -159,6 +263,15 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
+
+  /* USER CODE BEGIN Init */
 	HAL_I2S_DeInit(&hi2s2);
 	HAL_TIM_OC_DeInit(&htim2);
 	HAL_TIM_OC_DeInit(&htim3);
@@ -169,19 +282,6 @@ int main(void)
 	HAL_DMA_DeInit(&hdma_tim3_ch3);
 	HAL_DMA_DeInit(&hdma_spi2_tx);
 	HAL_DMA_DeInit(&hdma_tim3_ch4);
-
-
-
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
   /* --- Enable Flash prefetch and caches before changing SYSCLK --- */
   __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
   __HAL_FLASH_INSTRUCTION_CACHE_ENABLE();
@@ -214,22 +314,25 @@ int main(void)
   //do know if it is necessary
   HAL_TIM_Base_Start(&htim2); // start the timer for the video sync
 
-  HAL_TIM_OC_Start(&htim2, TIM_CHANNEL_4);  // OC4Ref → TRGO
+  //HAL_TIM_OC_Start(&htim2, TIM_CHANNEL_4);  // OC4Ref → TRGO
 
 
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // this the same
-  HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
+  //HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
 
+  //AL_Delay(9);
+//
+//  HAL_DMA_Start(
+//    &hdma_tim3_ch1,
+//    (uint32_t)SyncTable,                // memory: array of CCR1 timings
+//    (uint32_t)&TIM3->CCR1,              // peripheral: CCR1 register
+//	VID_VSIZE                         // one entry per visible line
+//  );
+//  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);  // also enable CC1DE for VSync
 
-  HAL_DMA_Start(
-    &hdma_tim3_ch1,
-    (uint32_t)SyncTable,                // memory: array of CCR1 timings
-    (uint32_t)&TIM3->CCR1,              // peripheral: CCR1 register
-	VID_VSIZE+27                           // one entry per visible line
-  );
-  __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);  // also enable CC1DE for VSync
+  //HAL_Delay(1);
 
   // 2) LINE BUFFERS → I2S DMA CMAR at back porch (CC3)
   HAL_DMA_Start(
@@ -244,13 +347,13 @@ int main(void)
 //    &hdma_tim3_ch4,
 //    (uint32_t)borders,                  // memory: single-entry blank-line buffer
 //    (uint32_t)&hdma_spi2_tx.Instance->CMAR,
-//    VID_VSIZE-1// one entry per line
+//    VID_VSIZE// one entry per line
 //  );
 
   // 4) Kick off the I2S DMA stream once
   HAL_I2S_Transmit_DMA(
     &hi2s2,
-    (uint16_t*)Vblack,
+    (uint16_t*)SyncTable,
     VID_HSIZE// 21 + 11 = 32 half-words per line
   );
 
@@ -273,54 +376,14 @@ int main(void)
 
   //static uint8_t rx_byte;
   vt100_init();
+  //HAL_Delay(1);
 
   while (1)
   {
-	  demo_no_uart_run();
-
-
-/*		for (int i=50, j=50; i < 160 && j < 150; i++ && j++) {
-            gdiDrawSmallTextEx(i, j, "IDAN");
-//			if (i == 160 && j == 150) {
-//				i = 50;
-//				j = 50;
-//			}
-        	HAL_Delay(50);
-        	vidClearScreen();
-		}
-		vidClearScreen();
-
-		for (int k=0; k < 100; k++) {
-			gdiDrawTextEx((100+k), 50, "I");
-			gdiDrawTextEx((105+k), 50, "D");
-			gdiDrawTextEx((110+k), 50, "A");
-			gdiDrawTextEx((115+k), 50, "N");
-			HAL_Delay(50);
-		}
-		vidClearScreen();
-
-		for (int i=50, j=50; i < 160 && j < 150; i++ && j++) {
-            gdiDrawBigTextEx(i, j, "IDAN");
-//			if (i == 160 && j == 150) {
-//				i = 50;
-//				j = 50;
-//			}
-        	HAL_Delay(50);
-        	vidClearScreen();
-		}
-		vidClearScreen();*/
-
-
-
-
-	  //introScreen("Hey whats up");
-
-	  //HAL_Delay(1000);
-
-
-	  //show();
+	  demo_vt100_commands();
+	  HAL_Delay(1000);
     /* USER CODE END WHILE */
-
+    
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -574,7 +637,7 @@ static void MX_TIM3_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.Pulse = 7200;//(672+208);//(672+208);
+  sConfigOC.Pulse = 7300;//(672+208);//(672+208);
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
@@ -649,7 +712,7 @@ void Video_AdjustI2SFor8MHz(void) {
     SPI2->I2SPR = (div << SPI_I2SPR_I2SDIV_Pos)
                 | (odd << SPI_I2SPR_ODD_Pos);
 }
-//
+
 //void Video_SetupTiming(void) {
 //    uint32_t sys = HAL_RCC_GetSysClockFreq();     // e.g. 96000000
 //    uint32_t hf = 1000000UL / PAL_Hsyncinterval;  // 15625
@@ -664,9 +727,6 @@ void Video_AdjustI2SFor8MHz(void) {
 //    __HAL_TIM_SET_COMPARE (&htim3, TIM_CHANNEL_4,
 //                           sync + (HPORCH+XFERS_PERLINE)*perHW);
 //
-//    uint32_t div = sys / (2 * 8000000UL);         // e.g. 6
-//    SPI2->I2SPR = (div << SPI_I2SPR_I2SDIV_Pos)
-//                | (0 << SPI_I2SPR_ODD_Pos);
 //}
 
 

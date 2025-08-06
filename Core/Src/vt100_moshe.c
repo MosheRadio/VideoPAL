@@ -1,12 +1,5 @@
 /*
- * vt100_moshe.c
- *
- *  Created on: Aug 5, 2025
- *      Author: Moshe
- *
- *  VT100 protocol parser for STM32G474RE using HAL polling on UART
- */
-/*
+
 
 #include "stm32g4xx_hal.h"
 #include <string.h>
@@ -58,18 +51,41 @@ static void parse_csi(void) {
             pal_clear_screen((uint8_t)p1);
             break;
 
-        // Add more cases for other CSI commands as needed:
-        // case 'A': // Cursor up by p1 lines
-        //     pal_cursor_up(p1);
-        //     break;
-        // case 'm': // Graphic rendition
-        //     pal_set_style(p1, p2);
-        //     break;
+         case 'A': // Cursor up by p1 lines
+             pal_cursor_up(p1);
+             break;
+         case 'm': // Graphic rendition
+             pal_set_style(p1, p2);
+             break;
 
         default:
             // Unknown CSI command: ignore or handle as needed
             break;
     }
+}
+
+void pal_set_style(int p1, int p2) {
+	switch(p1) {
+		case 0: // Reset all attributes
+			pal_reset_style();
+			break;
+		case 1: // Bold
+			pal_set_bold(1);
+			break;
+		case 22: // Normal intensity
+			pal_set_bold(0);
+			break;
+		case 30 ... 37: // Foreground color
+			pal_set_foreground_color(p1 - 30);
+			break;
+		case 40 ... 47: // Background color
+			pal_set_background_color(p1 - 40);
+			break;
+		default:
+			// Unsupported style, ignore
+			break;
+	}
+
 }
 
 // Main VT100 processing loop
@@ -105,7 +121,7 @@ void vt100_process(void) {
             // case 'c': // Reset terminal
 
             default:
-                // Unrecognized escape: print the character after ESC
+
                 palPutChar(rx);
                 break;
         }
@@ -113,53 +129,35 @@ void vt100_process(void) {
 }
 
 
- * uart_vt100_example.c
- *
- * This file demonstrates how to integrate the VT100 parser with an
- * STM32 HAL UART driver.  It is not compiled by default; you can
- * include it in your project and adapt the function names to your
- * microcontroller and CubeMX configuration.  The example uses
- * interrupt‑driven reception.  When a byte is received, the HAL
- * callback forwards it to the VT100 parser via vt100_feed().
-
-*/
 
 
 
 
-/*
 #include "vt100.h"
 #include "stm32g4xx_hal.h"
 
- External handle for the UART.  Defined in usart.c
 extern UART_HandleTypeDef huart2;
 
- Buffer used for interrupt‑driven reception of one byte.
+
 static uint8_t rx_byte;
 
- Call this after initialising the UART (huart2).  It starts the
- * interrupt reception of the first byte and initialises the VT100
- * parser.
+
 void uart_vt100_start(void)
 {
     vt100_init();
-     Start reception of a single byte in interrupt mode.  When a
-     * byte is received, HAL_UART_RxCpltCallback() will be invoked.
+
     HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
 }
 
- HAL callback invoked when a byte has been received over UART.
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == USART2) {
          Feed the received byte into the VT100 parser
         vt100_feed(rx_byte);
-         Restart interrupt reception for the next byte
+
         HAL_UART_Receive_IT(huart, &rx_byte, 1);
     }
 }
+
 */
-
-
-
-
