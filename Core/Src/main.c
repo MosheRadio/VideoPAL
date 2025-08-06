@@ -122,6 +122,33 @@ void TIMER_SET(uint32_t sys){
 	}
 }
 
+void demo_no_uart_run(void)
+{
+    /* Clear the screen and reset the cursor to the top left. */
+    gdiClearScreen();
+
+    /* List of names to display. */
+    const char *names[] = { "Moshe", "Idan", "Lior", "Reut" };
+    const int count = sizeof(names) / sizeof(names[0]);
+
+    /* For each name, compute the x coordinate such that the text
+     * appears flush to the right edge of the display.  Then set
+     * the cursor and print the characters one by one.  After each
+     * name, wait for a second. */
+    for (int i = 0; i < count; ++i) {
+        int len = strlen(names[i]);
+        int x = VID_PIXELS_X - len * GDI_SYSFONT_WIDTH;
+        int y = i * GDI_SYSFONT_HEIGHT;
+        gdiSetCursor(x, y);
+        for (const char *p = names[i]; *p; ++p) {
+            gdiPutChar((uint8_t)*p);
+        }
+        /* Delay 1 second (1000 ms) */
+        HAL_Delay(1000);
+    }
+}
+
+
 /* USER CODE END 0 */
 
 /**
@@ -196,12 +223,11 @@ int main(void)
   HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
 
 
-
   HAL_DMA_Start(
     &hdma_tim3_ch1,
     (uint32_t)SyncTable,                // memory: array of CCR1 timings
     (uint32_t)&TIM3->CCR1,              // peripheral: CCR1 register
-    325                           // one entry per visible line
+	VID_VSIZE+27                           // one entry per visible line
   );
   __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC1);  // also enable CC1DE for VSync
 
@@ -210,16 +236,16 @@ int main(void)
     &hdma_tim3_ch3,
     (uint32_t)lineptrs,                 // memory: array of line-buffer addresses
     (uint32_t)&hdma_spi2_tx.Instance->CMAR,
-	313//VID_VSIZE
+	VID_VSIZE//VID_VSIZE
   );
 
-  // 3) BLACK-PORCH → I2S DMA CMAR at front porch (CC4)
-  HAL_DMA_Start(
-    &hdma_tim3_ch4,
-    (uint32_t)borders,                  // memory: single-entry blank-line buffer
-    (uint32_t)&hdma_spi2_tx.Instance->CMAR,
-    313// one entry per line
-  );
+//  // 3) BLACK-PORCH → I2S DMA CMAR at front porch (CC4)
+//  HAL_DMA_Start(
+//    &hdma_tim3_ch4,
+//    (uint32_t)borders,                  // memory: single-entry blank-line buffer
+//    (uint32_t)&hdma_spi2_tx.Instance->CMAR,
+//    VID_VSIZE-1// one entry per line
+//  );
 
   // 4) Kick off the I2S DMA stream once
   HAL_I2S_Transmit_DMA(
@@ -245,29 +271,13 @@ int main(void)
 //  gdiDrawTextEx(150, 80, "RUBEN");
 //  gdiDrawTextEx(160, 100, "a");
 
-  static uint8_t rx_byte;
+  //static uint8_t rx_byte;
   vt100_init();
+
   while (1)
   {
-	  for (int i = 0 ; i < 100; i++){
-		  if (i == 0 )
-			  vt100_feed(0x1b);
-		  else if (i == 1)
-			  vt100_feed('[');
-		  else if (i == 2)
-			  vt100_feed('A');
-		  else if (i == 3)
-			  vt100_feed('A');
-		  else if (i == 4)
-			  vt100_feed(0x1b);
-		  else if (i == 5)
-			  vt100_feed('[');
-		  else if (i == 6)
-			  vt100_feed('H');
-		  else
-			  vt100_feed(' ');
-		  HAL_DELAY(1000);
-	  }
+	  demo_no_uart_run();
+
 
 /*		for (int i=50, j=50; i < 160 && j < 150; i++ && j++) {
             gdiDrawSmallTextEx(i, j, "IDAN");
@@ -312,7 +322,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
+  }
   /* USER CODE END 3 */
 }
 
@@ -559,12 +569,12 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_TIMING;
-  sConfigOC.Pulse = 2000;//208;
+  sConfigOC.Pulse = 1100;//208;
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
   }
-  sConfigOC.Pulse = 8000;//(672+208);//(672+208);
+  sConfigOC.Pulse = 7200;//(672+208);//(672+208);
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
@@ -579,7 +589,6 @@ static void MX_TIM3_Init(void)
   __HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_CC4);   // CC4DE bit → DMA request on CC4
   //__HAL_TIM_ENABLE_OCxPRELOAD(&htim3, TIM_CHANNEL_3);
   //__HAL_TIM_ENABLE_OCxPRELOAD(&htim3, TIM_CHANNEL_4);
-
 
 }
 

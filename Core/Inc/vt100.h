@@ -26,4 +26,6 @@ void vt100_feed(uint8_t ch);
  * call. */
 void vt100_process_buffer(const uint8_t *buf, uint16_t len);
 
+
+
 #endif /* VT100_H */

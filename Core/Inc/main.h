@@ -32,6 +32,8 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "vt100.h"
+#include "gdi.h"
+#include "video.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

@@ -215,3 +215,4 @@ void gdiVT100ProcessBuffer(const uint8_t *buf, uint16_t len)
         gdiVT100Feed(buf[i]);
     }
 }
+
